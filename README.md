@@ -1,4 +1,4 @@
-# Nichukulie 🚀
+# Nichukulie 
 
 A full-stack errand-running and logistics platform built for Nairobi. Customers book errands, pay via M-Pesa, and track deliveries in real time. Admins manage runners, orders, and payments through a live dashboard.
 
