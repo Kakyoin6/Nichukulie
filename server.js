@@ -4,7 +4,6 @@
 
 require('dotenv').config();
 
-// Fix DNS for MongoDB SRV lookups
 const dns = require('dns');
 dns.setServers(['8.8.8.8', '1.1.1.1']);
 
@@ -12,6 +11,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
+const path = require('path');
 
 const connectMongo = require('./config/db');
 const { notFound, errorHandler } = require('./middleware/errorHandler');
@@ -27,43 +27,38 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ── CORS ────────────────────────────────────────────────────
-const allowedOrigins = new Set([
+const allowedOrigins = [
   process.env.FRONTEND_URL,
   `http://localhost:${PORT}`,
   'http://localhost:5000',
-  `http://127.0.0.1:${PORT}`,
   'http://127.0.0.1:5000',
   'http://localhost:5500',
-  'http://127.0.0.1:5500',
-  'null',
-].filter(Boolean));
+  'null'
+].filter(Boolean);
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.has(origin)) {
+    if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-
-    console.warn(`CORS blocked: ${origin}`);
-    return callback(null, false);
+    callback(null, false);
   },
-  credentials: true,
+  credentials: true
 }));
 
-// ── SECURITY ────────────────────────────────────────────────
-app.use(helmet({ contentSecurityPolicy: false }));
+// ── MIDDLEWARE ──────────────────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: false
+}));
+
 app.use(express.json({ limit: '100kb' }));
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+
+app.use(
+  morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev')
+);
+
 app.use('/api', apiLimiter);
 
-// ── ROOT ROUTE ──────────────────────────────────────────────
-app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Nichukulie API is running 🚀',
-    environment: process.env.NODE_ENV || 'development',
-  });
-});
 
 // ── API ROUTES ──────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
@@ -71,29 +66,58 @@ app.use('/api/errands', errandRoutes);
 app.use('/api/mpesa', mpesaRoutes);
 app.use('/api/admin', adminRoutes);
 
+
+// ── FRONTEND STATIC FILES ───────────────────────────────────
+// Serves frontend/index.html, css, js, images, etc.
+app.use(express.static(path.join(__dirname, '../frontend')));
+
+
 // ── HEALTH CHECK ────────────────────────────────────────────
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     service: 'Nichukulie API',
-    env: process.env.NODE_ENV || 'development',
-    time: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    time: new Date().toISOString()
   });
 });
 
-// ── 404 HANDLER ─────────────────────────────────────────────
-app.use(notFound);
 
-// ── ERROR HANDLER ───────────────────────────────────────────
+// ── FRONTEND FALLBACK ────────────────────────────────────────
+// Allows direct navigation to frontend routes
+app.get('*', (req, res, next) => {
+
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+
+  res.sendFile(
+    path.join(__dirname, '../frontend/index.html')
+  );
+});
+
+
+// ── ERROR HANDLING ──────────────────────────────────────────
+app.use(notFound);
 app.use(errorHandler);
+
 
 // ── START SERVER ────────────────────────────────────────────
 if (require.main === module) {
+
   app.listen(PORT, () => {
+
     console.log(`Nichukulie API running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(
+      `Frontend: ${path.join(__dirname, '../frontend')}`
+    );
+
     setTimeout(connectMongo, 0);
+
   });
+
 }
+
 
 module.exports = app;
