@@ -1,64 +1,38 @@
-# Nichukulie — Errand Running & Logistics Platform (Backend)
+# Nichukulie 
 
-Nichukulie is a full-stack errand-running platform for Nairobi: customers book errands (shopping, pharmacy pickups, document collection, package delivery), pay via M-Pesa, and an admin dashboard manages runners, orders, and payments. This README documents the backend architecture, how to run it, its real capacity characteristics, and a code walkthrough for presenting this project technically (interviews, code review, portfolio).
+A full-stack errand-running and logistics platform built for Nairobi. Customers book errands, pay via M-Pesa, and track deliveries in real time. Admins manage runners, orders, and payments through a live dashboard.
 
----
-
-## Table of contents
-
-- [Architecture overview](#architecture-overview)
-- [Tech stack](#tech-stack)
-- [Project structure](#project-structure)
-- [Setup & running locally](#setup--running-locally)
-- [API reference](#api-reference)
-- [Authentication & authorization](#authentication--authorization)
-- [Testing](#testing)
-- [Security](#security)
-- [Capacity & scaling — what this can actually handle](#capacity--scaling--what-this-can-actually-handle)
-- [Known limitations & roadmap](#known-limitations--roadmap)
-- [Code walkthrough (for presenting this project)](#code-walkthrough-for-presenting-this-project)
+> *Nichukulie* means "let me carry it for you" in Swahili.
 
 ---
 
-## Architecture overview
+## Features
 
-```
-┌─────────────┐      HTTPS/JSON       ┌──────────────┐      Mongoose       ┌─────────────────┐
-│   Browser    │ ───────────────────▶ │  Express API  │ ──────────────────▶ │  MongoDB Atlas   │
-│ (index.html, │ ◀─────────────────── │   (Node.js)   │ ◀────────────────── │   (M0 free tier) │
-│  vanilla JS) │     JWT in header     └──────┬───────┘                     └─────────────────┘
-└─────────────┘                              │
-                                              │ HTTPS
-                                              ▼
-                                    ┌───────────────────┐
-                                    │  Safaricom Daraja   │
-                                    │  (M-Pesa STK Push)  │
-                                    └───────────────────┘
-```
-
-The backend is a layered Express API following a standard MVC-style separation:
-
-- **Routes** define HTTP method + path + which middleware/validation applies, and delegate to controllers.
-- **Controllers** hold the actual request-handling logic.
-- **Models** define MongoDB schemas via Mongoose, including data-level rules (e.g. password hashing).
-- **Middleware** handles cross-cutting concerns: JWT auth, role checks, error handling.
-
-This separation is what lets the test suite mock and isolate each layer independently, and is the conventional structure a reviewer expects when they open the repo.
+- **Errand booking** — shopping, pharmacy pickups, document collection, package delivery
+- **M-Pesa payments** — STK Push integration via Safaricom Daraja API
+- **Real-time map** — Leaflet + OpenStreetMap, route preview with live distance and ETA
+- **Role-based access** — customers, runners, and admins with separate dashboards
+- **Order tracking** — public tracking by order ID, no login required
+- **Admin dashboard** — live stats, runner management, customer oversight, revenue tracking
+- **JWT authentication** — secure, stateless auth with per-request token validation
+- **Security hardening** — rate limiting, HTTP security headers, input validation
 
 ---
 
 ## Tech stack
 
-| Layer | Technology | Why |
-|---|---|---|
-| Runtime | Node.js 18+ | Non-blocking I/O suits an API that's mostly waiting on DB/payment-gateway responses |
-| Framework | Express 4 | Minimal, well-understood, easy to reason about middleware order |
-| Database | MongoDB (Atlas) via Mongoose | Flexible schema for an evolving domain model; ODM gives schema validation + hooks |
-| Auth | JWT (jsonwebtoken) + bcryptjs | Stateless auth — no server-side session store needed |
-| Validation | express-validator | Declarative request validation at the route layer |
-| Payments | Safaricom Daraja API (M-Pesa STK Push) | The dominant mobile payment method in Kenya |
-| Testing | Jest + Supertest + mongodb-memory-server | Full integration tests against a real (in-memory) MongoDB, not mocks of the DB layer |
-| CI | GitHub Actions | Runs the full test suite on every push/PR, across Node 18 and 20 |
+**Backend**
+- Node.js + Express
+- MongoDB (Mongoose)
+- JSON Web Tokens
+- Safaricom Daraja API (M-Pesa)
+- Jest + Supertest (test suite)
+- GitHub Actions (CI)
+
+**Frontend**
+- Vanilla JS, HTML, CSS
+- Leaflet + OpenStreetMap (maps)
+- OSRM (routing)
 
 ---
 
@@ -66,212 +40,72 @@ This separation is what lets the test suite mock and isolate each layer independ
 
 ```
 backend/
-├── config/
-│   └── db.js                 # MongoDB connection logic
-├── models/
-│   ├── User.js                # Customers, runners, admins — one schema, role field
-│   ├── Errand.js               # The core booking entity
-│   └── Payment.js              # M-Pesa payment records
-├── middleware/
-│   ├── auth.js                 # protect (JWT check), adminOnly (RBAC)
-│   └── errorHandler.js         # 404 + centralized error handler
-├── controllers/
-│   ├── authController.js       # register, login, getMe
-│   ├── errandController.js     # CRUD + tracking for errands
-│   ├── mpesaController.js      # STK push, Safaricom callback, status check
-│   └── adminController.js      # Dashboard stats, user/runner management
-├── routes/
-│   ├── authRoutes.js
-│   ├── errandRoutes.js
-│   ├── mpesaRoutes.js
-│   └── adminRoutes.js
-├── utils/
-│   └── mpesa.js                 # Daraja OAuth token helper
-├── tests/
-│   ├── setup.js                  # In-memory MongoDB for tests
-│   ├── auth.test.js
-│   ├── errands.test.js
-│   ├── mpesa.test.js
-│   └── admin.test.js
-├── .github/workflows/ci.yml      # CI: install + test on push/PR
-├── server.js                      # App wiring — middleware, routes, startup
-└── seed.js                        # Seeds demo users (admin, customers, runners)
+├── config/          # Database connection
+├── controllers/     # Route logic
+├── middleware/      # Auth, rate limiting, error handling
+├── models/          # Mongoose schemas
+├── routes/          # API route definitions
+├── utils/           # Shared helpers
+└── tests/           # Jest + Supertest test suite
+
+frontend/
+└── index.html       # Single-page application
 ```
 
 ---
 
-## Setup & running locally
+## Getting started
+
+### Prerequisites
+- Node.js 18+
+- MongoDB Atlas account
+- Safaricom Daraja developer account (for M-Pesa, optional for local dev)
+
+### Installation
 
 ```bash
-git clone <your-repo-url>
-cd backend
+git clone https://github.com/your-username/nichukulie.git
+cd nichukulie/backend
 npm install
-cp .env.example .env   # then fill in real values — see below
-npm run seed             # creates demo admin/customer/runner accounts
-npm run dev               # starts on http://localhost:5000
+cp .env.example .env
+# Fill in your environment variables
+npm run seed    # Create demo accounts
+npm run dev     # Start on http://localhost:5000
 ```
 
-### Required environment variables (`.env`)
-
-| Variable | Purpose |
-|---|---|
-| `MONGO_URI` | MongoDB Atlas connection string (`mongodb+srv://...`) |
-| `JWT_SECRET` | Secret used to sign auth tokens — must be long and random in production |
-| `JWT_EXPIRES_IN` | Token lifetime, e.g. `7d` |
-| `MPESA_CONSUMER_KEY` / `MPESA_CONSUMER_SECRET` | From your Safaricom Daraja app |
-| `MPESA_SHORTCODE` / `MPESA_PASSKEY` | Daraja sandbox/production paybill credentials |
-| `MPESA_ENV` | `sandbox` or `production` |
-| `BACKEND_URL` | Public URL Safaricom uses to call back with payment results |
-| `FRONTEND_URL` | Allowed CORS origin for your deployed frontend |
-
-**Local Windows note:** if you see `querySrv ECONNREFUSED` connecting to Atlas, this is a known issue where Node's internal DNS resolver fails SRV lookups on some networks even though the OS resolver succeeds. `server.js` and `seed.js` both set `dns.setServers(['8.8.8.8', '1.1.1.1'])` at startup to work around it.
-
----
-
-## API reference
-
-All endpoints are prefixed with `/api`. Protected routes require `Authorization: Bearer <token>`.
-
-| Method | Endpoint | Auth | Description |
-|---|---|---|---|
-| POST | `/auth/register` | — | Create a customer account |
-| POST | `/auth/login` | — | Authenticate, returns JWT |
-| GET | `/auth/me` | ✅ | Current user's profile |
-| POST | `/errands` | ✅ | Create a new errand |
-| GET | `/errands/my` | ✅ | Current user's errands (paginated) |
-| GET | `/errands/track/:orderId` | — | Public order tracking by ID |
-| GET | `/errands/:id` | ✅ | Single errand detail |
-| GET | `/errands` | ✅ admin | All errands (paginated, filterable) |
-| PATCH | `/errands/:id` | ✅ admin | Update status / assign runner |
-| POST | `/mpesa/stkpush` | ✅ | Initiate M-Pesa payment prompt |
-| POST | `/mpesa/callback` | — (Safaricom calls this) | Payment result webhook |
-| GET | `/mpesa/status/:checkoutId` | ✅ | Poll payment status |
-| GET | `/admin/stats` | ✅ admin | Dashboard summary numbers |
-| GET | `/admin/users` | ✅ admin | List customers |
-| GET | `/admin/runners` | ✅ admin | List runners |
-| PATCH | `/admin/users/:id/status` | ✅ admin | Suspend/reactivate a user |
-
----
-
-## Authentication & authorization
-
-- **Passwords**: hashed with bcrypt (cost factor 12) via a Mongoose `pre('save')` hook on `User` — hashing happens at the model layer, so it's consistent regardless of which code path creates a user (registration, seeding, future admin-created accounts).
-- **Tokens**: JWT signed with `JWT_SECRET`, containing `{ id, role }`, verified on every protected request by the `protect` middleware, which then re-fetches the user from the DB (so a suspended/deleted user is rejected even with a still-valid token).
-- **Role-based access**: `adminOnly` middleware checks `req.user.role === 'admin'` after `protect` has run. Roles are `customer`, `runner`, `admin` — note that `role` cannot be set by the public `/register` endpoint, so privilege escalation isn't possible through normal signup; admin accounts must be created via seeding or a trusted internal process.
-- **Validation**: `express-validator` rules live at the route layer (e.g. password complexity, Kenyan phone number format, required fields) and run before the controller ever executes.
-
----
-
-## Testing
+### Running tests
 
 ```bash
 npm test
 ```
 
-~25 tests across 4 suites, using **Jest + Supertest** against a real **in-memory MongoDB** (`mongodb-memory-server`) — not mocked database calls, so the tests exercise actual Mongoose queries, schema validation, and indexes.
-
-| Suite | Covers |
-|---|---|
-| `auth.test.js` | Registration validation, duplicate email rejection, login success/failure, token-protected route access |
-| `errands.test.js` | Errand creation, ownership isolation (a customer only sees their own errands), public tracking, **admin/customer permission boundary (403s)** |
-| `mpesa.test.js` | STK push initiation (axios mocked — no real Safaricom calls in CI), callback handling for success/failure, payment status |
-| `admin.test.js` | Dashboard stats shape, customer-only listing (no password leakage), account suspension flow |
-
-CI (`.github/workflows/ci.yml`) runs the full suite on every push/PR to `main`, across Node 18.x and 20.x.
+The test suite runs against an in-memory MongoDB instance — no real database or API keys needed.
 
 ---
 
-## Capacity & scaling — what this can actually handle
+## API overview
 
-This is worth understanding precisely rather than quoting a generic number — it's also a strong thing to be able to discuss in an interview.
+| Method | Endpoint | Auth | Description |
+|---|---|---|---|
+| POST | `/api/auth/register` | — | Create account |
+| POST | `/api/auth/login` | — | Sign in, returns JWT |
+| GET | `/api/auth/me` | ✅ | Current user profile |
+| POST | `/api/errands` | ✅ | Book an errand |
+| GET | `/api/errands/my` | ✅ | My errands |
+| GET | `/api/errands/track/:id` | — | Public order tracking |
+| POST | `/api/mpesa/stkpush` | ✅ | Initiate M-Pesa payment |
+| GET | `/api/admin/stats` | ✅ Admin | Dashboard stats |
 
-### Business logic capacity (errands/runners)
-**There is no artificial cap in the code.** Any number of `Errand` documents can exist with `status: 'pending'` or `'active'` simultaneously, and any number of runners can be registered. The real constraint today is operational, not technical: **runner assignment is currently a manual admin action** (`PATCH /errands/:id`), not an automated dispatch algorithm. A real-world deployment would need an automated matching system (e.g. nearest available runner, load balancing across runners) — this is a natural, well-scoped next feature, not a rewrite.
-
-### Technical capacity (concurrent requests)
-| Layer | Realistic ceiling on current (free-tier) infrastructure | Why |
-|---|---|---|
-| Node/Express | Thousands of concurrent connections | Non-blocking event loop; this layer is not the bottleneck for typical JSON CRUD workloads |
-| MongoDB Atlas M0 (free tier) | ~100 concurrent connections | Atlas explicitly markets M0 as dev/test only, not production-grade |
-| Render/Railway free web service | Cold starts after ~15 min idle (10-30s+ first request) | Free tier spins down on inactivity — the single biggest real-world UX issue for a portfolio demo, more than raw throughput |
-| bcrypt (cost factor 12) | ~3-4 hashes/sec per core | Intentionally slow, by design, to make brute-forcing expensive — caps login/register throughput specifically, not general API throughput |
-
-**Honest summary**: on free-tier infrastructure, this comfortably handles dozens of concurrent users; above roughly 100 concurrent connections, the Atlas M0 connection limit becomes the binding constraint, not the application code. Moving to a paid Atlas tier (M10+) and a non-sleeping compute tier removes both ceilings — no code changes required, since the bottlenecks are infrastructure-tier, not architectural.
+Full API documentation available in the [private docs](./docs/).
 
 ---
 
-## Security
+## Environment variables
 
-What's implemented, and why:
-
-| Measure | Implementation | Protects against |
-|---|---|---|
-| Password hashing | bcrypt, cost factor 12, via a model-level `pre('save')` hook | Stolen database dump being directly usable to log in as users |
-| JWT auth, re-validated per request | `protect` middleware re-fetches the user from MongoDB on every request, not just trusting the token payload | Suspended/deleted accounts retaining access until token expiry |
-| Role-based access control | `adminOnly` middleware; `role` field cannot be set via public registration | Privilege escalation through normal signup |
-| Mass-assignment protection | Controllers explicitly destructure allowed fields rather than passing `req.body` straight into `Model.create()` | A client smuggling extra fields (e.g. a future `isVerified` or `walletBalance` field) through a request body |
-| Rate limiting | `express-rate-limit`, tiered: 10/15min on auth endpoints, 5/10min on M-Pesa STK push, 300/15min general API | Brute-force login attempts, registration spam, and abuse of paid M-Pesa API calls |
-| Security headers | `helmet()` globally | Clickjacking, MIME-sniffing, and other common header-level attacks |
-| Request body size limit | `express.json({ limit: '100kb' })` | Basic payload-size denial-of-service |
-| CORS allowlist | Explicit origin allowlist, not wildcard | Unauthorized origins making authenticated requests using a user's stored token |
-| No raw error leakage | Controllers log full errors server-side, return generic messages to the client | Internal schema/implementation details being exposed to anonymous callers |
-| M-Pesa callback hardening | Callback only transitions a payment that's genuinely `pending`/`processing`; unmatched or already-resolved `checkoutId`s are ignored | A forged callback flipping an arbitrary payment to "completed" without a real transaction |
-
-### Known security gaps (honest, not hidden)
-
-- **M-Pesa callback isn't cryptographically verified.** Safaricom's STK callback has no signature to check, unlike e.g. Stripe webhooks. The mitigation above (only accept transitions from a genuinely pending payment) narrows the attack significantly but isn't equivalent to true signature verification. In production, this should be paired with an IP allowlist for Safaricom's published callback ranges at the network/firewall level.
-- **No account lockout after repeated failed logins** — rate limiting slows brute-force attempts but doesn't lock the specific account; a sufficiently patient distributed attack could still attempt many passwords across different IPs.
-- **No refresh token rotation** — JWTs are long-lived (default 7 days) with no revocation list; a stolen token remains valid until it expires. A production system would add a refresh-token + short-lived-access-token pattern with server-side revocation.
-- **`JWT_SECRET` strength isn't enforced in code** — nothing currently validates that the configured secret is sufficiently long/random; this is operational (deployment checklist) rather than something the application can fully guarantee for itself.
-
----
-
-## Known limitations & roadmap
-
-Being upfront about these is more credible than hiding them:
-
-- **No automated runner dispatch** — assignment is manual via the admin panel.
-- **No per-customer/runner rating system yet** — the data model doesn't track completed-job counts or ratings; the admin UI shows "—" rather than inventing numbers.
-- **No admin payments-list endpoint** — only single-payment status lookup exists (`GET /mpesa/status/:checkoutId`); a `GET /admin/payments` endpoint would be the natural addition.
-- **No live runner location tracking** — the planned real-time feature (Socket.io-based) is on the roadmap but not yet built.
-- **No image uploads** (e.g. proof-of-delivery photos) — would need object storage (S3-compatible) integration.
-
----
-
-## Code walkthrough (for presenting this project)
-
-Use this as a guided tour if you're walking someone through the codebase, e.g. in an interview.
-
-### 1. Request lifecycle — trace a single request end to end
-
-Take `POST /api/errands` (a customer booking an errand):
-
-1. **`server.js`** — request hits Express, passes through `cors()`, `express.json()`, `morgan('dev')` logging, then routes to `app.use('/api/errands', errandRoutes)`.
-2. **`routes/errandRoutes.js`** — matches `router.post('/', protect, [validation rules], createErrand)`.
-3. **`middleware/auth.js` → `protect`** — extracts the JWT from `Authorization: Bearer <token>`, verifies it, loads the real user from MongoDB, attaches it as `req.user`. If invalid/missing, responds `401` immediately — `createErrand` never runs.
-4. **`express-validator` rules** — check `type`, `pickup`, `delivery`, `scheduledDate`, `price.total` are present and well-formed. If invalid, `400` with field-level errors.
-5. **`controllers/errandController.js` → `createErrand`** — builds the new `Errand` document, explicitly setting `customer: req.user._id` (never trusting a client-supplied customer ID — this is what prevents one user from creating an errand "as" another user).
-6. **`models/Errand.js`** — Mongoose's `pre('save')` hook auto-generates a human-readable `orderId` (`NCK-XXXXXXXX`) before the document is persisted.
-7. Response: `201` with the created errand as JSON.
-
-This is a good "walk me through how a request flows through your system" answer for an interview — it touches middleware, auth, validation, and the model layer in one path.
-
-### 2. Why the auth/RBAC design is worth highlighting
-
-- `protect` re-fetches the user from the DB on every request rather than trusting the JWT payload alone — this means a suspended account (`isActive: false`) or a role change takes effect immediately, without waiting for token expiry.
-- `role` is never accepted from the public registration payload — only `firstName`, `lastName`, `email`, `phone`, `password` are destructured into the new user. This is a deliberate, testable security boundary (`tests/errands.test.js` includes explicit 403 tests proving a customer cannot reach admin-only routes).
-
-### 3. Why the M-Pesa integration is structured the way it is
-
-- `utils/mpesa.js` isolates the Daraja OAuth token exchange as a single-purpose function — this is what made it possible to unit-test the controller by mocking `axios` directly, without needing real Safaricom sandbox credentials in CI.
-- The STK push (`mpesaController.js → stkPush`) and the callback handler (`handleCallback`) are deliberately separate: the push *initiates* a payment and returns immediately (the customer must approve on their phone), while the callback is a **webhook Safaricom calls asynchronously**, sometimes seconds later — this is why `Payment` exists as its own model with a `status` field (`pending → processing → completed/failed`) rather than trying to handle payment confirmation synchronously in the same request.
-
-### 4. Why the test suite uses a real in-memory database instead of mocking Mongoose
-
-This is a deliberate, defensible choice worth mentioning: mocking `User.findOne()` etc. would test that your code calls the right Mongoose methods, but wouldn't catch real bugs like a broken schema validator, a missing index, or an incorrect query filter. Using `mongodb-memory-server` means the tests exercise the actual MongoDB query engine — closer to integration testing than unit testing, which is the right tradeoff for an API whose main job is talking to a database correctly.
+See `.env.example` for the full list of required variables. Never commit your `.env` file.
 
 ---
 
 ## License
 
-This project is part of a personal portfolio. See repository for license details.
+MIT
