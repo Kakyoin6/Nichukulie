@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nichukulie — Errand Delivery, Nairobi</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root {
+  --green:#1D9E75; --green-light:#E1F5EE; --green-dark:#085041;
+  --amber:#EF9F27; --amber-light:#FAEEDA;
+  --red:#E24B4A; --red-light:#FCEBEB;
+  --blue:#378ADD; --blue-light:#E6F1FB;
+  --gray-50:#F8F9FA; --gray-100:#F1EFE8; --gray-200:#D3D1C7;
+  --gray-400:#888780; --gray-600:#5F5E5A; --gray-800:#2C2C2A;
+  --white:#FFFFFF;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:0 4px 16px rgba(0,0,0,0.1);
+  --radius-sm:8px; --radius-md:12px; --radius-lg:16px;
+  --font-head:'Syne',sans-serif; --font-body:'Plus Jakarta Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font-body);background:var(--gray-50);color:var(--gray-800);min-height:100vh;transition:background .25s,color .25s;}
+body[data-theme="dark"]{
+  --green:#3dd39f; --green-light:rgba(61,211,159,.14); --green-dark:#bdf8e4;
+  --amber:#f7b955; --amber-light:rgba(247,185,85,.14);
+  --red:#ff7070; --red-light:rgba(255,112,112,.14);
+  --blue:#76b9ff; --blue-light:rgba(118,185,255,.14);
+  --gray-50:#0f1517; --gray-100:#1a2326; --gray-200:#2a373b;
+  --gray-400:#8ea0a5; --gray-600:#c4d0d3; --gray-800:#f4faf8;
+  --white:#151d20;
+  --shadow-sm:0 10px 30px rgba(0,0,0,.22);
+  --shadow-md:0 18px 50px rgba(0,0,0,.34);
+  background:#0f1517;
+}
+.hidden{display:none!important;}
+.text-muted{color:var(--gray-600);font-size:14px;}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;white-space:nowrap;}
+.badge-green{background:var(--green-light);color:var(--green-dark);}
+.badge-amber{background:var(--amber-light);color:#633806;}
+.badge-red{background:var(--red-light);color:#791F1F;}
+.badge-blue{background:var(--blue-light);color:#185FA5;}
+.screen{display:none;} .screen.active{display:block;}
+
+/* ============================================================
+   AUTH — both panels fully dark green.
+   All colors are hardcoded hex so dark-mode theme vars
+   can never bleed in and make text unreadable.
+============================================================ */
+.auth-wrap{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;}
+.auth-brand{
+  background:#085041;display:flex;flex-direction:column;
+  justify-content:space-between;padding:56px;
+}
+.auth-form-wrap{
+  background:#0a6350;
+  display:flex;align-items:center;justify-content:center;padding:60px 80px;
+}
+.auth-form{width:100%;max-width:380px;}
+.brand-logo{font-family:var(--font-head);font-size:22px;font-weight:700;color:#fff;letter-spacing:-.01em;}
+.brand-logo span{color:#FAC775;}
+.brand-tagline{color:rgba(255,255,255,.65);font-size:14px;line-height:1.6;max-width:280px;margin-top:14px;}
+.manifest{border-top:1px solid rgba(255,255,255,.12);padding-top:22px;font-family:'Courier New',monospace;}
+.manifest-label{color:#5DCAA5;font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px;}
+.manifest-row{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;padding:7px 0;border-bottom:1px dashed rgba(255,255,255,.1);}
+.manifest-row:last-child{border-bottom:none;}
+.manifest-row .m-route{color:#fff;}
+.manifest-row .m-status{color:#FAC775;font-size:11px;}
+.auth-title{font-family:var(--font-head);font-size:24px;font-weight:700;color:#fff;margin-bottom:6px;}
+.auth-subtitle{color:rgba(255,255,255,.6);font-size:14px;margin-bottom:28px;}
+/* auth-specific form elements override the shared ones */
+.auth-form .form-label{display:block;font-size:13px;font-weight:600;color:rgba(255,255,255,.85);margin-bottom:6px;}
+.auth-form .form-group{margin-bottom:16px;}
+.auth-form .form-input{
+  width:100%;padding:11px 14px;
+  border:1.5px solid rgba(255,255,255,.2);border-radius:var(--radius-sm);
+  font-family:var(--font-body);font-size:15px;
+  color:#fff;background:rgba(255,255,255,.08);outline:none;
+  transition:border-color .2s,background .2s;
+}
+.auth-form .form-input::placeholder{color:rgba(255,255,255,.35);}
+.auth-form .form-input:focus{border-color:#FAC775;background:rgba(255,255,255,.12);}
+.auth-form .form-input.error{border-color:#ff7070;}
+.auth-form .form-error{font-size:12px;color:#ffb3b3;margin-top:4px;}
+.auth-btn{
+  width:100%;padding:12px 20px;background:#FAC775;color:#085041;
+  font-family:var(--font-body);font-size:15px;font-weight:700;
+  border:none;border-radius:var(--radius-sm);cursor:pointer;
+  transition:background .2s;margin-top:4px;
+}
+.auth-btn:hover{background:#f5b84e;}
+.auth-btn:disabled{opacity:.6;cursor:not-allowed;}
+.auth-switch{text-align:center;margin-top:20px;font-size:14px;color:rgba(255,255,255,.55);}
+.auth-switch a{color:#FAC775;font-weight:600;cursor:pointer;}
+.auth-forgot{font-size:13px;color:rgba(255,255,255,.5);cursor:pointer;font-weight:500;}
+.auth-forgot:hover{color:#FAC775;}
+.auth-input-wrap{position:relative;}
+.auth-input-icon{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  cursor:pointer;color:rgba(255,255,255,.4);
+  font-size:12px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;
+}
+.auth-input-icon:hover{color:#FAC775;}
+.auth-pass-icon-input{padding-right:56px!important;}
+.strength-bar{height:3px;border-radius:4px;background:rgba(255,255,255,.15);overflow:hidden;margin-top:6px;}
+.strength-fill{height:100%;width:0;border-radius:4px;transition:width .3s,background .3s;}
+.errand-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+
+/* ---- SHARED FORM ELEMENTS (dashboard) ---- */
+.form-group{margin-bottom:18px;}
+.form-label{display:block;font-size:13px;font-weight:600;color:var(--gray-800);margin-bottom:6px;}
+.form-input{
+  width:100%;padding:11px 14px;
+  border:1.5px solid var(--gray-200);border-radius:var(--radius-sm);
+  font-family:var(--font-body);font-size:15px;
+  color:var(--gray-800);background:var(--white);
+  transition:border-color .2s,box-shadow .2s;outline:none;
+}
+.form-input:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(29,158,117,.12);}
+.form-input.error{border-color:var(--red);}
+.form-error{font-size:12px;color:var(--red);margin-top:4px;}
+select.form-input{appearance:none;cursor:pointer;}
+textarea.form-input{resize:vertical;min-height:90px;}
+
+/* ---- BUTTONS ---- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:15px;font-weight:600;cursor:pointer;border:none;transition:all .2s;text-decoration:none;}
+.btn-primary{background:var(--green);color:#fff;box-shadow:0 4px 12px rgba(29,158,117,.3);}
+.btn-primary:hover{background:#17856A;}
+.btn-outline{background:transparent;color:var(--gray-800);border:1.5px solid var(--gray-200);}
+.btn-outline:hover{background:var(--gray-100);border-color:var(--gray-400);}
+.btn-sm{padding:7px 14px;font-size:13px;border-radius:7px;}
+.btn-block{width:100%;}
+.theme-toggle{width:44px;height:38px;border-radius:var(--radius-sm);border:1px solid var(--gray-200);background:var(--white);color:var(--gray-800);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;}
+
+/* ---- LAYOUT ---- */
+.app-layout{display:flex;min-height:100vh;}
+.sidebar{width:256px;background:var(--white);border-right:1px solid var(--gray-200);display:flex;flex-direction:column;padding:0;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;z-index:100;}
+.sidebar-logo{padding:24px 24px 20px;font-family:var(--font-head);font-size:22px;font-weight:800;color:var(--gray-800);border-bottom:1px solid var(--gray-100);}
+.sidebar-logo span{color:var(--green);}
+.sidebar-section{padding:16px 12px 8px;}
+.sidebar-section-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gray-400);padding:0 12px;margin-bottom:4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);color:var(--gray-600);font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;margin-bottom:2px;border-left:2px solid transparent;}
+.nav-item:hover{background:var(--gray-100);color:var(--gray-800);}
+.nav-item.active{background:var(--green-light);color:var(--green-dark);font-weight:600;border-left-color:var(--green);}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:11px;font-weight:700;padding:1px 7px;border-radius:20px;}
+.sidebar-user{margin-top:auto;padding:16px 20px;border-top:1px solid var(--gray-100);display:flex;align-items:center;gap:10px;}
+.user-avatar{width:36px;height:36px;border-radius:50%;background:var(--green-light);color:var(--green-dark);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;}
+.user-info{flex:1;overflow:hidden;}
+.user-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-size:12px;color:var(--gray-400);}
+.logout-btn{color:var(--gray-400);cursor:pointer;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;}
+.logout-btn:hover{color:var(--red);}
+.main-content{margin-left:256px;flex:1;min-height:100vh;}
+.topbar{background:var(--white);border-bottom:1px solid var(--gray-200);padding:16px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.page-title{font-family:var(--font-head);font-size:20px;font-weight:700;}
+.topbar-actions{display:flex;align-items:center;gap:12px;}
+.notif-btn{height:38px;padding:0 14px;border-radius:var(--radius-sm);border:1px solid var(--gray-200);background:var(--white);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;font-weight:500;color:var(--gray-600);position:relative;}
+.notif-dot{width:7px;height:7px;background:var(--red);border-radius:50%;position:absolute;top:8px;right:8px;border:2px solid var(--white);}
+.content-area{padding:32px;}
+
+/* ---- DASHBOARD HERO ---- */
+.dashboard-hero{border-radius:var(--radius-lg);margin-bottom:24px;padding:32px;background:var(--green-dark);color:#fff;display:grid;grid-template-columns:1fr 300px;gap:28px;align-items:stretch;}
+.dashboard-hero h1{font-family:var(--font-head);font-size:26px;font-weight:700;line-height:1.15;margin-bottom:10px;}
+.dashboard-hero p{color:rgba(255,255,255,.7);line-height:1.6;font-size:14px;}
+.hero-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px;}
+.hero-actions .btn-amber{background:#FAC775;color:#085041;border:none;padding:12px 20px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:15px;font-weight:700;cursor:pointer;}
+.hero-actions .btn-amber:hover{background:#f5b84e;}
+.hero-actions .btn-ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.3);padding:12px 20px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:15px;font-weight:600;cursor:pointer;}
+.hero-actions .btn-ghost:hover{background:rgba(255,255,255,.08);}
+.floating-chip{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#9FE1CB;margin-bottom:14px;}
+.floating-panel{background:#0F6E56;border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-md);padding:18px;font-family:'Courier New',monospace;}
+.floating-panel-label{color:#9FE1CB;font-size:10px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px;}
+.floating-panel-row{display:flex;align-items:baseline;justify-content:space-between;padding:8px 0;font-size:13px;border-bottom:1px dashed rgba(255,255,255,.12);}
+.floating-panel-row:last-child{border-bottom:none;}
+.floating-panel-row span:first-child{color:#C0DD97;}
+.floating-panel-row strong{color:#fff;font-weight:700;}
+
+/* ---- STAT CARDS ---- */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+.stat-card{background:var(--white);border-radius:var(--radius-md);padding:20px;border:1px solid var(--gray-100);}
+.stat-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.stat-marker{width:8px;height:8px;border-radius:2px;}
+.stat-marker-green{background:var(--green);}
+.stat-marker-amber{background:var(--amber);}
+.stat-marker-blue{background:var(--blue);}
+.stat-marker-red{background:var(--red);}
+.stat-value{font-family:var(--font-head);font-size:28px;font-weight:700;color:var(--gray-800);}
+.stat-label{font-size:13px;color:var(--gray-600);margin-top:2px;}
+
+/* ---- CARDS ---- */
+.card{background:var(--white);border-radius:var(--radius-md);border:1px solid var(--gray-100);box-shadow:var(--shadow-sm);}
+.card-header{padding:20px 24px;border-bottom:1px solid var(--gray-100);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-family:var(--font-head);font-size:16px;font-weight:700;}
+.card-body{padding:20px 24px;}
+
+/* ---- TABLE ---- */
+.data-table{width:100%;border-collapse:collapse;}
+.data-table th{text-align:left;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-400);padding:10px 16px;background:var(--gray-50);border-bottom:1px solid var(--gray-200);}
+.data-table td{padding:14px 16px;border-bottom:1px solid var(--gray-100);font-size:14px;}
+.data-table tr:last-child td{border-bottom:none;}
+.data-table tr:hover td{background:var(--gray-50);}
+.table-wrap{overflow-x:auto;}
+
+/* ---- MAP ---- */
+.map-shell{position:relative;overflow:hidden;border-radius:var(--radius-md);border:1px solid var(--gray-200);background:var(--gray-100);}
+#errandMap{width:100%;height:260px;}
+.map-meta{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px;}
+.map-meta-item{background:var(--gray-50);border:1px solid var(--gray-100);border-radius:var(--radius-sm);padding:10px;}
+
+/* ---- ERRAND CARDS ---- */
+.errand-card{background:var(--white);border-radius:var(--radius-md);border:1px solid var(--gray-100);padding:20px;box-shadow:var(--shadow-sm);margin-bottom:12px;}
+.errand-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;}
+.errand-type{font-size:16px;font-weight:700;color:var(--gray-800);}
+.errand-id{font-size:12px;color:var(--gray-400);margin-top:2px;}
+.errand-detail{font-size:13px;color:var(--gray-600);margin-bottom:6px;}
+.errand-footer{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px solid var(--gray-100);}
+.errand-price{font-family:var(--font-head);font-size:18px;font-weight:700;color:var(--green);}
+.quick-action{transition:border-color .15s;}
+.quick-action:hover{border-color:var(--green);}
+.empty-state{text-align:center;color:var(--gray-600);padding:26px;border:1px dashed var(--gray-200);border-radius:var(--radius-md);background:var(--white);}
+
+/* ---- COVERAGE ---- */
+.coverage-strip{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+.coverage-pill{border:1px solid var(--gray-200);background:var(--white);border-radius:999px;padding:7px 11px;font-size:12px;font-weight:700;color:var(--gray-600);}
+.coverage-pill.active{border-color:var(--green);color:var(--green);background:var(--green-light);}
+
+/* ---- MPESA MODAL ---- */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:var(--radius-lg);padding:32px;max-width:420px;width:90%;box-shadow:var(--shadow-md);animation:slideUp .2s ease;}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.mpesa-logo{width:80px;height:80px;border-radius:50%;background:#006B3E;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-family:var(--font-head);font-size:18px;font-weight:800;color:#fff;}
+.mpesa-amount{text-align:center;font-family:var(--font-head);font-size:36px;font-weight:800;color:var(--gray-800);margin-bottom:4px;}
+.mpesa-desc{text-align:center;color:var(--gray-600);font-size:14px;margin-bottom:24px;}
+.mpesa-step{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;font-size:14px;color:var(--gray-600);}
+.mpesa-step-num{width:24px;height:24px;border-radius:50%;background:var(--green-light);color:var(--green-dark);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.spinner{width:20px;height:20px;border:2px solid var(--gray-200);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ---- TRACKER ---- */
+.tracker-steps{display:flex;align-items:flex-start;margin:24px 0;}
+.tracker-step{display:flex;align-items:center;flex:1;}
+.tracker-step:last-child{flex:none;}
+.step-wrap{display:flex;flex-direction:column;align-items:center;}
+.step-circle{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;border:2px solid var(--gray-200);background:var(--white);color:var(--gray-400);font-weight:700;}
+.step-circle.done{background:var(--green);border-color:var(--green);color:#fff;}
+.step-circle.active{border-color:var(--green);color:var(--green);background:var(--green-light);}
+.step-line{flex:1;height:2px;background:var(--gray-200);margin:0 4px;margin-top:-18px;}
+.step-line.done{background:var(--green);}
+.step-label{color:var(--gray-600);margin-top:6px;font-size:11px;text-align:center;width:60px;}
+
+/* ---- TOAST ---- */
+.toast-container{position:fixed;top:24px;right:24px;z-index:999;}
+.toast{background:var(--white);border-radius:var(--radius-md);padding:14px 18px;box-shadow:var(--shadow-md);border-left:4px solid var(--green);display:flex;align-items:center;gap:12px;margin-bottom:10px;min-width:280px;animation:toastIn .3s ease;}
+.toast.error{border-left-color:var(--red);}
+.toast.warning{border-left-color:var(--amber);}
+.toast.info{border-left-color:var(--blue);}
+@keyframes toastIn{from{transform:translateX(60px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+.toast-msg{flex:1;font-size:14px;font-weight:500;}
+
+/* ---- TABS ---- */
+.tabs{display:flex;border-bottom:2px solid var(--gray-200);margin-bottom:24px;}
+.tab{padding:10px 20px;font-size:14px;font-weight:600;color:var(--gray-600);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;}
+.tab.active{color:var(--green);border-bottom-color:var(--green);}
+
+/* ---- RUNNER CARDS ---- */
+.runner-card{background:var(--white);border:1px solid var(--gray-100);border-radius:var(--radius-md);padding:16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-sm);}
+.runner-avatar{width:44px;height:44px;border-radius:50%;background:var(--blue-light);color:#185FA5;display:flex;align-items:center;justify-content:center;font-weight:700;}
+.admin-chip{background:#26215C;color:#CECBF6;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;}
+
+/* ---- MISC ---- */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.floating-help{position:fixed;right:24px;bottom:24px;z-index:120;background:var(--gray-800);color:var(--white);border-radius:var(--radius-sm);padding:10px 16px;cursor:pointer;font-weight:600;font-size:13px;border:none;}
+
+/* ---- RESPONSIVE ---- */
+@media(max-width:900px){
+  .auth-wrap{grid-template-columns:1fr;}
+  .auth-brand{display:none;}
+  .auth-form-wrap{padding:40px 24px;min-height:100vh;}
+  .stats-grid{grid-template-columns:repeat(2,1fr);}
+  .main-content{margin-left:0;}
+  .errand-grid,.dashboard-hero{grid-template-columns:1fr;}
+}
+@media(max-width:640px){
+  .content-area{padding:20px;}
+  .topbar{padding:14px 20px;}
+  .stats-grid,.grid-2,.grid-3{grid-template-columns:1fr!important;}
+}
+</style>
+</head>
+<body>
+<div class="toast-container" id="toastContainer"></div>
+<button class="floating-help" onclick="showToast('For urgent support call +254 712 345 678.','info')">Help</button>
+
+<!-- ===== LOGIN ===== -->
+<div class="screen active" id="screenLogin">
+  <div class="auth-wrap">
+    <div class="auth-brand">
+      <div>
+        <div class="brand-logo">nichu<span>kulie</span></div>
+        <div class="brand-tagline">Errand running across Nairobi. Shopping, pharmacy, documents and packages — booked in minutes, paid by M-Pesa.</div>
+      </div>
+      <div class="manifest">
+        <div class="manifest-label">Today's manifest</div>
+        <div class="manifest-row"><span class="m-route">Westlands → Kilimani</span><span class="m-status">In transit</span></div>
+        <div class="manifest-row"><span class="m-route">CBD → South B</span><span class="m-status">Picked up</span></div>
+        <div class="manifest-row"><span class="m-route">Lavington → Karen</span><span class="m-status">Delivered</span></div>
+      </div>
+    </div>
+    <div class="auth-form-wrap">
+      <div class="auth-form">
+        <div class="auth-title">Sign in</div>
+        <div class="auth-subtitle">Use your Nichukulie account to continue.</div>
+        <div class="form-group">
+          <label class="form-label" style="color:rgba(255,255,255,.85)">Email address</label>
+          <input type="email" class="form-input" id="loginEmail" placeholder="you@example.com" style="color:#fff;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);" />
+          <div class="form-error hidden" id="loginEmailErr" style="color:#ffb3b3">Please enter a valid email</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:rgba(255,255,255,.85)">Password</label>
+          <div class="auth-input-wrap">
+            <input type="password" class="form-input auth-pass-icon-input" id="loginPass" placeholder="Your password" style="color:#fff;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);" />
+            <span class="auth-input-icon" onclick="togglePass('loginPass',this)">show</span>
+          </div>
+          <div class="form-error hidden" id="loginPassErr" style="color:#ffb3b3">Password required</div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
+          <span class="auth-forgot">Forgot password?</span>
+        </div>
+        <button class="auth-btn" id="loginSubmitBtn" onclick="handleLogin()">Sign in</button>
+        <div class="auth-switch">Don't have an account? <a onclick="showScreen('screenRegister')">Create one</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== REGISTER ===== -->
+<div class="screen" id="screenRegister">
+  <div class="auth-wrap">
+    <div class="auth-brand">
+      <div>
+        <div class="brand-logo">nichu<span>kulie</span></div>
+        <div class="brand-tagline">Create an account to start booking errands. Runners are verified and every payment runs through M-Pesa.</div>
+      </div>
+      <div class="manifest">
+        <div class="manifest-label">What you can book</div>
+        <div class="manifest-row"><span class="m-route">Shopping &amp; delivery</span><span class="m-status">Same-day</span></div>
+        <div class="manifest-row"><span class="m-route">Pharmacy pickups</span><span class="m-status">Same-day</span></div>
+        <div class="manifest-row"><span class="m-route">Documents &amp; packages</span><span class="m-status">Scheduled</span></div>
+      </div>
+    </div>
+    <div class="auth-form-wrap">
+      <div class="auth-form">
+        <div class="auth-title">Create account</div>
+        <div class="auth-subtitle">Get started in under a minute.</div>
+        <div class="errand-grid">
+          <div class="form-group">
+            <label class="form-label" style="color:rgba(255,255,255,.85)">First name</label>
+            <input type="text" class="form-input" id="regFirst" placeholder="Amara" style="color:#fff;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);" />
+            <div class="form-error hidden" id="regFirstErr" style="color:#ffb3b3">Required</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="color:rgba(255,255,255,.85)">Last name</label>
+            <input type="text" class="form-input" id="regLast" placeholder="Ochieng" style="color:#fff;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);" />
+            <div class="form-error hidden" id="regLastErr" style="color:#ffb3b3">Required</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:rgba(255,255,255,.85)">Email address</label>
+          <input type="email" class="form-input" id="regEmail" placeholder="you@example.com" style="color:#fff;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);" />
+          <div class="form-error hidden" id="regEmailErr" style="color:#ffb3b3">Enter a valid email</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:rgba(255,255,255,.85)">Phone (M-Pesa number)</label>
+          <input type="tel" class="form-input" id="regPhone" placeholder="0712 345 678" style="color:#fff;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);" />
+          <div class="form-error hidden" id="regPhoneErr" style="color:#ffb3b3">Enter a valid Kenyan number</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:rgba(255,255,255,.85)">Password</label>
+          <div class="auth-input-wrap">
+            <input type="password" class="form-input auth-pass-icon-input" id="regPass" placeholder="Min. 8 characters" oninput="checkStrength(this.value)" style="color:#fff;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);" />
+            <span class="auth-input-icon" onclick="togglePass('regPass',this)">show</span>
+          </div>
+          <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+          <div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:3px" id="strengthLabel"></div>
+          <div class="form-error hidden" id="regPassErr" style="color:#ffb3b3">Min 8 chars, include a number &amp; symbol</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:rgba(255,255,255,.85)">Confirm password</label>
+          <input type="password" class="form-input" id="regPassConf" placeholder="Repeat password" style="color:#fff;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);" />
+          <div class="form-error hidden" id="regPassConfErr" style="color:#ffb3b3">Passwords do not match</div>
+        </div>
+        <button class="auth-btn" id="regSubmitBtn" onclick="handleRegister()">Create account</button>
+        <div class="auth-switch">Already have an account? <a onclick="showScreen('screenLogin')">Sign in</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== USER DASHBOARD ===== -->
+<div class="screen" id="screenUser">
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo">nichu<span>kulie</span></div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Main</div>
+        <div class="nav-item active" onclick="switchUserTab('dashboard',this)">Dashboard</div>
+        <div class="nav-item" onclick="switchUserTab('new-errand',this)">New errand</div>
+        <div class="nav-item" onclick="switchUserTab('my-errands',this)">My errands <span class="nav-badge" id="errandsNavBadge" style="display:none">0</span></div>
+        <div class="nav-item" onclick="switchUserTab('track',this)">Track order</div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Account</div>
+        <div class="nav-item" onclick="switchUserTab('wallet',this)">Wallet / M-Pesa</div>
+        <div class="nav-item" onclick="switchUserTab('history',this)">History</div>
+        <div class="nav-item" onclick="switchUserTab('settings',this)">Settings</div>
+      </div>
+      <div class="sidebar-user">
+        <div class="user-avatar" id="userAvatarSidebar">--</div>
+        <div class="user-info">
+          <div class="user-name" id="userNameSidebar">Loading...</div>
+          <div class="user-role">Customer</div>
+        </div>
+        <span class="logout-btn" onclick="logout()">Exit</span>
+      </div>
+    </aside>
+    <main class="main-content">
+      <!-- Dashboard -->
+      <div id="userTab-dashboard">
+        <div class="topbar">
+          <div class="page-title">Dashboard</div>
+          <div class="topbar-actions">
+            <div class="notif-btn">Alerts<div class="notif-dot"></div></div>
+            <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">☾</button>
+            <button class="btn btn-primary btn-sm" onclick="switchUserTab('new-errand',null)">+ New errand</button>
+          </div>
+        </div>
+        <div class="content-area">
+          <div class="dashboard-hero">
+            <div>
+              <span class="floating-chip">Nairobi · same-day</span>
+              <h1>Good morning, <span id="greetName">there</span>.</h1>
+              <p>Book a runner, track each stage, and keep payments organized in one place.</p>
+              <div class="hero-actions">
+                <button class="btn-amber" onclick="switchUserTab('new-errand',null)">Book an errand</button>
+                <button class="btn-ghost" onclick="switchUserTab('track',null)">Track order</button>
+              </div>
+            </div>
+            <div class="floating-panel">
+              <div class="floating-panel-label">Your summary</div>
+              <div class="floating-panel-row"><span>Total errands</span><strong id="heroTotalErrands">—</strong></div>
+              <div class="floating-panel-row"><span>Active now</span><strong id="heroLiveRoutes">—</strong></div>
+              <div class="floating-panel-row"><span>Total spent</span><strong id="heroTotalSpent">—</strong></div>
+            </div>
+          </div>
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-header"><span class="stat-marker stat-marker-green"></span></div><div class="stat-value" id="statTotalErrands">—</div><div class="stat-label">Total errands</div></div>
+            <div class="stat-card"><div class="stat-header"><span class="stat-marker stat-marker-amber"></span><div class="badge badge-amber">Live</div></div><div class="stat-value" id="statActiveErrands">—</div><div class="stat-label">Active now</div></div>
+            <div class="stat-card"><div class="stat-header"><span class="stat-marker stat-marker-blue"></span></div><div class="stat-value" id="statCompletedErrands">—</div><div class="stat-label">Completed</div></div>
+            <div class="stat-card"><div class="stat-header"><span class="stat-marker stat-marker-red"></span></div><div class="stat-value" id="statTotalSpent">—</div><div class="stat-label">Total spent</div></div>
+          </div>
+          <div class="card" style="margin-bottom:24px">
+            <div class="card-header"><div class="card-title">Active errands</div><button class="btn btn-outline btn-sm" onclick="switchUserTab('my-errands',null)">View all</button></div>
+            <div class="card-body" style="padding:0"><div id="activeErrandsList" style="padding:20px"></div></div>
+          </div>
+          <div class="grid-3">
+            <div class="card quick-action" style="padding:18px 20px;cursor:pointer" onclick="prefillErrand('shopping')"><div style="font-weight:600;font-size:14px">Shopping run</div><div class="text-muted" style="font-size:12px;margin-top:4px">Supermarkets &amp; shops</div></div>
+            <div class="card quick-action" style="padding:18px 20px;cursor:pointer" onclick="prefillErrand('pharmacy')"><div style="font-weight:600;font-size:14px">Pharmacy</div><div class="text-muted" style="font-size:12px;margin-top:4px">Medicine pickup</div></div>
+            <div class="card quick-action" style="padding:18px 20px;cursor:pointer" onclick="prefillErrand('documents')"><div style="font-weight:600;font-size:14px">Documents</div><div class="text-muted" style="font-size:12px;margin-top:4px">Pickup &amp; delivery</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- New Errand -->
+      <div id="userTab-new-errand" class="hidden">
+        <div class="topbar"><div class="page-title">Book an Errand</div></div>
+        <div class="content-area">
+          <div class="grid-2">
+            <div>
+              <div class="card">
+                <div class="card-header"><div class="card-title">Errand details</div></div>
+                <div class="card-body">
+                  <div class="form-group">
+                    <label class="form-label">Errand type</label>
+                    <select class="form-input" id="errandType" onchange="updatePrice()">
+                      <option value="">Select type...</option>
+                      <option value="shopping">Shopping (supermarket)</option>
+                      <option value="pharmacy">Pharmacy pickup</option>
+                      <option value="documents">Document collection</option>
+                      <option value="package">Package delivery</option>
+                      <option value="food">Food pickup</option>
+                      <option value="custom">Custom errand</option>
+                    </select>
+                    <div class="form-error hidden" id="errandTypeErr">Please select a type</div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Pickup location</label>
+                    <input type="text" class="form-input" id="errandPickup" placeholder="e.g. Westgate Mall, Westlands" />
+                    <div class="form-error hidden" id="errandPickupErr">Pickup location required</div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Delivery location</label>
+                    <input type="text" class="form-input" id="errandDelivery" placeholder="e.g. Kilimani, Nairobi" />
+                    <div class="form-error hidden" id="errandDeliveryErr">Delivery location required</div>
+                  </div>
+                  <div class="errand-grid">
+                    <div class="form-group"><label class="form-label">Pickup county</label><select class="form-input" id="pickupCounty" onchange="updatePrice()"></select></div>
+                    <div class="form-group"><label class="form-label">Delivery county</label><select class="form-input" id="deliveryCounty" onchange="updatePrice()"></select></div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Service level</label>
+                    <select class="form-input" id="serviceLevel" onchange="updatePrice()">
+                      <option value="same_day">Same-day delivery</option>
+                      <option value="scheduled">Scheduled delivery</option>
+                      <option value="express">Express priority (+Ksh 100)</option>
+                      <option value="intercounty">Inter-county dispatch</option>
+                    </select>
+                  </div>
+                  <div class="errand-grid">
+                    <div class="form-group"><label class="form-label">Date</label><input type="date" class="form-input" id="errandDate" /><div class="form-error hidden" id="errandDateErr">Date required</div></div>
+                    <div class="form-group">
+                      <label class="form-label">Time slot</label>
+                      <select class="form-input" id="errandTime">
+                        <option>8:00 AM - 10:00 AM</option><option>10:00 AM - 12:00 PM</option>
+                        <option>12:00 PM - 2:00 PM</option><option>2:00 PM - 4:00 PM</option>
+                        <option>4:00 PM - 6:00 PM</option><option>ASAP (Express)</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-group"><label class="form-label">Notes for runner</label><textarea class="form-input" id="errandNotes" placeholder="Any specific instructions..."></textarea></div>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="card" style="margin-bottom:16px">
+                <div class="card-header"><div class="card-title">Route map</div></div>
+                <div class="card-body">
+                  <div class="map-shell"><div id="errandMap"></div></div>
+                  <div class="map-meta">
+                    <div class="map-meta-item"><div class="text-muted" style="font-size:12px">Distance</div><div style="font-weight:800" id="routeDistance">--</div></div>
+                    <div class="map-meta-item"><div class="text-muted" style="font-size:12px">ETA</div><div style="font-weight:800" id="routeDuration">--</div></div>
+                  </div>
+                  <button class="btn btn-outline btn-block" style="margin-top:12px" onclick="previewRoute()">Preview route</button>
+                </div>
+              </div>
+              <div class="card">
+                <div class="card-header"><div class="card-title">Price estimate</div></div>
+                <div class="card-body">
+                  <div style="margin-bottom:12px">
+                    <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px"><span class="text-muted">Base fee</span><span id="priceBase">Ksh 200</span></div>
+                    <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px"><span class="text-muted">Distance fee</span><span id="priceDist">Ksh 50</span></div>
+                    <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px"><span class="text-muted">Service charge</span><span>Ksh 30</span></div>
+                    <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px"><span class="text-muted">Coverage</span><span id="coverageFee">Local county</span></div>
+                    <div style="border-top:1px solid var(--gray-200);padding-top:10px;display:flex;justify-content:space-between;font-weight:700;font-family:var(--font-head)"><span>Total</span><span id="priceTotal" style="color:var(--green)">Ksh 280</span></div>
+                  </div>
+                  <button class="btn btn-primary btn-block" onclick="bookErrand()">Book &amp; Pay via M-Pesa</button>
+                  <div style="text-align:center;font-size:12px;color:var(--gray-400);margin-top:10px">Secured by M-Pesa STK Push</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- My Errands -->
+      <div id="userTab-my-errands" class="hidden">
+        <div class="topbar"><div class="page-title">My Errands</div></div>
+        <div class="content-area">
+          <div class="tabs">
+            <div class="tab active" onclick="filterErrands('all',this)">All</div>
+            <div class="tab" onclick="filterErrands('active',this)">Active</div>
+            <div class="tab" onclick="filterErrands('pending',this)">Pending</div>
+            <div class="tab" onclick="filterErrands('completed',this)">Completed</div>
+            <div class="tab" onclick="filterErrands('cancelled',this)">Cancelled</div>
+          </div>
+          <div id="errandsList"></div>
+        </div>
+      </div>
+
+      <!-- Track -->
+      <div id="userTab-track" class="hidden">
+        <div class="topbar"><div class="page-title">Track Order</div></div>
+        <div class="content-area">
+          <div class="card" style="max-width:600px;margin:0 auto">
+            <div class="card-header"><div class="card-title">Live tracking</div></div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Order ID</label>
+                <div style="display:flex;gap:8px">
+                  <input type="text" class="form-input" id="trackId" placeholder="NCK-12345678" />
+                  <button class="btn btn-primary" onclick="trackOrder()">Track</button>
+                </div>
+              </div>
+              <div id="trackResult" class="hidden">
+                <div class="tracker-steps">
+                  <div class="tracker-step"><div class="step-wrap"><div class="step-circle" id="trackStep1">1</div><div class="step-label">Confirmed</div></div><div class="step-line" id="trackLine1"></div></div>
+                  <div class="tracker-step"><div class="step-wrap"><div class="step-circle" id="trackStep2">2</div><div class="step-label">Assigned</div></div><div class="step-line" id="trackLine2"></div></div>
+                  <div class="tracker-step"><div class="step-wrap"><div class="step-circle" id="trackStep3">3</div><div class="step-label">En route</div></div><div class="step-line" id="trackLine3"></div></div>
+                  <div class="tracker-step"><div class="step-wrap"><div class="step-circle" id="trackStep4">4</div><div class="step-label">Delivered</div></div></div>
+                </div>
+                <div id="trackRunnerCard"></div>
+                <div id="trackStatusNote" style="margin-top:16px;padding:14px;background:var(--green-light);border-radius:var(--radius-sm);font-size:13px;color:var(--green-dark);font-weight:600"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Wallet -->
+      <div id="userTab-wallet" class="hidden">
+        <div class="topbar"><div class="page-title">Wallet &amp; Payments</div></div>
+        <div class="content-area">
+          <div class="card" style="background:var(--green-dark);border:none;color:#fff;margin-bottom:24px">
+            <div class="card-body">
+              <div style="font-size:13px;opacity:.7;margin-bottom:4px">M-Pesa number on file</div>
+              <div style="font-family:var(--font-head);font-size:22px;font-weight:700" id="walletPhone">—</div>
+              <div style="font-size:13px;opacity:.6;margin-top:6px">Payments go directly through Safaricom STK Push — no balance is stored here.</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Transaction history</div></div>
+            <div class="table-wrap">
+              <table class="data-table"><thead><tr><th>Ref</th><th>Type</th><th>Amount</th><th>Date</th><th>Status</th></tr></thead><tbody id="transactionTable"></tbody></table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div id="userTab-history" class="hidden">
+        <div class="topbar"><div class="page-title">Errand History</div></div>
+        <div class="content-area"><div id="historyList"></div></div>
+      </div>
+
+      <!-- Settings -->
+      <div id="userTab-settings" class="hidden">
+        <div class="topbar"><div class="page-title">Account Settings</div></div>
+        <div class="content-area">
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-header"><div class="card-title">Profile</div></div>
+              <div class="card-body">
+                <div class="form-group"><label class="form-label">Full name</label><input type="text" class="form-input" id="settingsName" /></div>
+                <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="settingsEmail" /></div>
+                <div class="form-group"><label class="form-label">Phone (M-Pesa)</label><input type="tel" class="form-input" id="settingsPhone" /></div>
+                <button class="btn btn-primary btn-sm" onclick="showToast('Profile update coming soon.','info')">Save changes</button>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header"><div class="card-title">Security</div></div>
+              <div class="card-body">
+                <div class="form-group"><label class="form-label">Current password</label><input type="password" class="form-input" placeholder="••••••••" /></div>
+                <div class="form-group"><label class="form-label">New password</label><input type="password" class="form-input" placeholder="••••••••" /></div>
+                <div class="form-group"><label class="form-label">Confirm new password</label><input type="password" class="form-input" placeholder="••••••••" /></div>
+                <button class="btn btn-outline btn-sm" onclick="showToast('Password update coming soon.','info')">Update password</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ===== ADMIN DASHBOARD ===== -->
+<div class="screen" id="screenAdmin">
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo" style="display:flex;align-items:center;gap:8px">nichu<span>kulie</span> <span class="admin-chip">Admin</span></div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Operations</div>
+        <div class="nav-item active" onclick="switchAdminTab('admin-dashboard',this)">Overview</div>
+        <div class="nav-item" onclick="switchAdminTab('admin-errands',this)">All errands <span class="nav-badge" id="adminErrandsBadge">—</span></div>
+        <div class="nav-item" onclick="switchAdminTab('admin-runners',this)">Runners</div>
+        <div class="nav-item" onclick="switchAdminTab('admin-users',this)">Customers</div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Finance</div>
+        <div class="nav-item" onclick="switchAdminTab('admin-payments',this)">Payments</div>
+        <div class="nav-item" onclick="switchAdminTab('admin-reports',this)">Reports</div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Config</div>
+        <div class="nav-item" onclick="switchAdminTab('admin-coverage',this)">Coverage</div>
+        <div class="nav-item" onclick="switchAdminTab('admin-settings',this)">Settings</div>
+      </div>
+      <div class="sidebar-user">
+        <div class="user-avatar" style="background:#26215C;color:#CECBF6" id="adminAvatarSidebar">AD</div>
+        <div class="user-info"><div class="user-name" id="adminNameSidebar">Admin</div><div class="user-role">Super admin</div></div>
+        <span class="logout-btn" onclick="logout()">Exit</span>
+      </div>
+    </aside>
+    <main class="main-content">
+      <!-- Admin Overview -->
+      <div id="adminTab-admin-dashboard">
+        <div class="topbar">
+          <div class="page-title">Operations overview</div>
+          <div class="topbar-actions">
+            <div class="notif-btn">Alerts<div class="notif-dot"></div></div>
+            <button class="theme-toggle" onclick="toggleTheme()" id="adminThemeToggle">☾</button>
+            <span style="font-size:13px;color:var(--gray-600)"><strong id="todayDate"></strong></span>
+          </div>
+        </div>
+        <div class="content-area">
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-header"><span class="stat-marker stat-marker-green"></span></div><div class="stat-value" id="adminStatToday">—</div><div class="stat-label">Today's errands</div></div>
+            <div class="stat-card"><div class="stat-header"><span class="stat-marker stat-marker-blue"></span><div class="badge badge-green">Live</div></div><div class="stat-value" id="adminStatRunners">—</div><div class="stat-label">Active runners</div></div>
+            <div class="stat-card"><div class="stat-header"><span class="stat-marker stat-marker-amber"></span></div><div class="stat-value" id="adminStatRevenue">—</div><div class="stat-label">Total revenue</div></div>
+            <div class="stat-card"><div class="stat-header"><span class="stat-marker stat-marker-red"></span></div><div class="stat-value" id="adminStatPending">—</div><div class="stat-label">Pending errands</div></div>
+          </div>
+          <div class="grid-2" style="margin-bottom:24px">
+            <div class="card">
+              <div class="card-header"><div class="card-title">Recent errands</div><span class="badge badge-amber" id="adminPendingBadge">—</span></div>
+              <div class="table-wrap"><table class="data-table"><thead><tr><th>ID</th><th>Type</th><th>Customer</th><th>Status</th><th>Amount</th></tr></thead><tbody id="adminRecentErrands"></tbody></table></div>
+            </div>
+            <div class="card">
+              <div class="card-header"><div class="card-title">Runners</div></div>
+              <div class="card-body"><div id="runnersList"></div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Revenue (from completed errands)</div></div>
+            <div class="card-body">
+              <div id="revenueChart" style="display:flex;align-items:flex-end;gap:8px;height:120px;padding-top:16px"></div>
+              <div style="display:flex;gap:8px;margin-top:4px" id="revenueDays"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Errands -->
+      <div id="adminTab-admin-errands" class="hidden">
+        <div class="topbar">
+          <div class="page-title">All Errands</div>
+          <div class="topbar-actions">
+            <select class="form-input btn-sm" style="width:auto" onchange="filterAdminErrands(this.value)">
+              <option value="all">All status</option><option value="pending">Pending</option>
+              <option value="active">Active</option><option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+        </div>
+        <div class="content-area">
+          <div class="card">
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead><tr><th>Order ID</th><th>Customer</th><th>Type</th><th>Pickup</th><th>Delivery</th><th>Runner</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody id="adminErrandsTable"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Runners -->
+      <div id="adminTab-admin-runners" class="hidden">
+        <div class="topbar"><div class="page-title">Runners</div></div>
+        <div class="content-area"><div class="grid-3" id="adminRunnersGrid"></div></div>
+      </div>
+
+      <!-- Admin Customers -->
+      <div id="adminTab-admin-users" class="hidden">
+        <div class="topbar">
+          <div class="page-title">Customers</div>
+          <div class="topbar-actions"><input type="text" class="form-input" style="width:200px" placeholder="Search..." oninput="searchCustomers(this.value)" /></div>
+        </div>
+        <div class="content-area">
+          <div class="card">
+            <div class="table-wrap"><table class="data-table"><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Errands</th><th>Spent</th><th>Joined</th><th>Status</th></tr></thead><tbody id="adminCustomersTable"></tbody></table></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Payments -->
+      <div id="adminTab-admin-payments" class="hidden">
+        <div class="topbar"><div class="page-title">Payments</div></div>
+        <div class="content-area">
+          <div class="empty-state" style="margin-bottom:24px">
+            <div style="font-weight:600;margin-bottom:6px">Payment listing coming soon</div>
+            <div style="font-size:13px">A payments-list endpoint is on the backend roadmap. Individual payment status is available via the M-Pesa status endpoint.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Reports -->
+      <div id="adminTab-admin-reports" class="hidden">
+        <div class="topbar"><div class="page-title">Reports</div></div>
+        <div class="content-area">
+          <div class="grid-3">
+            <div class="card" style="padding:20px;cursor:pointer" onclick="showToast('Report export coming soon.','info')"><div style="font-weight:700;margin-bottom:4px">Revenue report</div><div class="text-muted" style="font-size:13px">Daily / weekly / monthly</div></div>
+            <div class="card" style="padding:20px;cursor:pointer" onclick="showToast('Report export coming soon.','info')"><div style="font-weight:700;margin-bottom:4px">Runner performance</div><div class="text-muted" style="font-size:13px">Completion rate &amp; areas</div></div>
+            <div class="card" style="padding:20px;cursor:pointer" onclick="showToast('Report export coming soon.','info')"><div style="font-weight:700;margin-bottom:4px">Customer analytics</div><div class="text-muted" style="font-size:13px">Retention &amp; repeat bookings</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Coverage -->
+      <div id="adminTab-admin-coverage" class="hidden">
+        <div class="topbar"><div class="page-title">Nationwide coverage</div></div>
+        <div class="content-area">
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-header"><span class="stat-marker stat-marker-green"></span></div><div class="stat-value" id="coverageCount">47</div><div class="stat-label">Counties served</div></div>
+            <div class="stat-card"><div class="stat-header"><span class="stat-marker stat-marker-blue"></span></div><div class="stat-value">8</div><div class="stat-label">Priority hubs</div></div>
+            <div class="stat-card"><div class="stat-header"><span class="stat-marker stat-marker-amber"></span></div><div class="stat-value">24-72h</div><div class="stat-label">Inter-county SLA</div></div>
+            <div class="stat-card"><div class="stat-header"><span class="stat-marker stat-marker-red"></span></div><div class="stat-value">Same-day</div><div class="stat-label">Major towns</div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">County network</div></div>
+            <div class="card-body"><div class="coverage-strip" id="coverageCountyList"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Settings -->
+      <div id="adminTab-admin-settings" class="hidden">
+        <div class="topbar"><div class="page-title">System settings</div></div>
+        <div class="content-area">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Pricing config</div></div>
+            <div class="card-body">
+              <div class="grid-2">
+                <div class="form-group"><label class="form-label">Base fee (Ksh)</label><input type="number" class="form-input" value="200" /></div>
+                <div class="form-group"><label class="form-label">Per km rate (Ksh)</label><input type="number" class="form-input" value="35" /></div>
+                <div class="form-group"><label class="form-label">Express surcharge (Ksh)</label><input type="number" class="form-input" value="100" /></div>
+                <div class="form-group"><label class="form-label">Service charge (Ksh)</label><input type="number" class="form-input" value="30" /></div>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="showToast('Pricing config saved.','success')">Save pricing</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- M-Pesa Modal -->
+<div class="modal-overlay" id="mpesaModal">
+  <div class="modal">
+    <div style="text-align:center">
+      <div class="mpesa-logo">M</div>
+      <div class="mpesa-amount" id="mpesaAmt">Ksh 280</div>
+      <div class="mpesa-desc">M-Pesa payment for errand service</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">M-Pesa phone number</label>
+      <input type="tel" class="form-input" id="mpesaPhone" placeholder="0712 345 678" />
+      <div class="form-error hidden" id="mpesaPhoneErr">Enter a valid Safaricom number</div>
+    </div>
+    <div id="mpesaSteps">
+      <div class="mpesa-step"><div class="mpesa-step-num">1</div>Enter your M-Pesa number above</div>
+      <div class="mpesa-step"><div class="mpesa-step-num">2</div>You'll receive an STK Push prompt on your phone</div>
+      <div class="mpesa-step"><div class="mpesa-step-num">3</div>Enter your M-Pesa PIN to confirm payment</div>
+    </div>
+    <div id="mpesaProcessing" class="hidden" style="text-align:center;padding:20px">
+      <div class="spinner" style="width:32px;height:32px;border-width:3px;margin:0 auto 16px"></div>
+      <div style="font-weight:600">Waiting for payment confirmation...</div>
+      <div class="text-muted" style="margin-top:6px;font-size:13px">Check your phone for the M-Pesa prompt</div>
+    </div>
+    <div id="mpesaSuccess" class="hidden" style="text-align:center;padding:10px">
+      <div style="font-size:48px;margin-bottom:12px">✅</div>
+      <div style="font-weight:700;font-size:18px;color:var(--green)">Payment confirmed</div>
+      <div class="text-muted" style="margin-top:6px">Your errand is booked. A runner will be assigned shortly.</div>
+      <div style="font-size:12px;background:var(--gray-100);padding:8px;border-radius:6px;margin-top:12px;font-family:monospace" id="mpesaRef">Ref: —</div>
+    </div>
+    <div id="mpesaError" class="hidden" style="text-align:center;padding:10px">
+      <div style="font-weight:600;color:var(--red);margin-bottom:8px">Payment not confirmed</div>
+      <div class="text-muted" style="font-size:13px">The STK Push was sent but payment was not confirmed. Please try again or contact support.</div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px" id="mpesaBtns">
+      <button class="btn btn-outline btn-block" onclick="closeMpesa()">Cancel</button>
+      <button class="btn btn-primary btn-block" onclick="processMpesa()" style="background:#006B3E">Pay now</button>
+    </div>
+  </div>
+</div>
+<script>
+// ===== STATE =====
+let currentUser=null,pendingBooking=null,leafletMap,routeLine,pickupMarker,deliveryMarker;
+const API_BASE=location.protocol.startsWith('http')?location.origin:'http://localhost:5000';
+let authToken=localStorage.getItem('nichukulieToken')||'';
+const KENYA_COUNTIES=['Baringo','Bomet','Bungoma','Busia','Elgeyo-Marakwet','Embu','Garissa','Homa Bay','Isiolo','Kajiado','Kakamega','Kericho','Kiambu','Kilifi','Kirinyaga','Kisii','Kisumu','Kitui','Kwale','Laikipia','Lamu','Machakos','Makueni','Mandera','Marsabit','Meru','Migori','Mombasa',"Murang'a",'Nairobi','Nakuru','Nandi','Narok','Nyamira','Nyandarua','Nyeri','Samburu','Siaya','Taita-Taveta','Tana River','Tharaka-Nithi','Trans Nzoia','Turkana','Uasin Gishu','Vihiga','Wajir','West Pokot'];
+const PRIORITY_HUBS=['Nairobi','Mombasa','Kisumu','Nakuru','Uasin Gishu','Kiambu','Machakos','Kajiado'];
+
+// ===== REAL NAIROBI RATES (from market research) =====
+// Base rates in KSh per errand type
+const RATES = {
+  shopping:    { base:500, desc:'Personal shopping (supermarket/Eastleigh)',   min:500,  max:800 },
+  pharmacy:    { base:200, desc:'Pharmacy pickup',                               min:150,  max:300  },
+  documents:   { base:300, desc:'Government office / document errand',           min:300,  max:350  },
+  package:     { base:300, desc:'General delivery service',                      min:300,  max:300  },
+  food:        { base:200, desc:'Meal pickup & delivery',                        min:150,  max:300  },
+  custom:      { base:250, desc:'Sourcing hard-to-find items',                   min:250,  max:500  },
+  gift:        { base:222, desc:'Gift shopping (flowers & such)',                min:222,  max:400  },
+  vetting_cbd: { base:150, desc:'Store vetting within CBD',                      min:150,  max:150  },
+  vetting_out: { base:300, desc:'Store vetting outside CBD',                     min:300,  max:null },
+  cbd_pickup:  { base:111, desc:'CBD package pick-up & delivery',               min:111,  max:111  },
+};
+const PER_KM_RATE = 10;          // Ksh per km for distance
+const EXPRESS_SURCHARGE = 50;   // express priority
+const SERVICE_CHARGE = 12;       // platform fee
+const INTERCOUNTY_BASE = 100;    // inter-county base add-on
+
+let errands=[],customers=[],runners=[],payments=[];
+
+// ===== API =====
+async function apiFetch(path,options={}){
+  const ctrl=new AbortController();
+  const t=setTimeout(()=>ctrl.abort(),options.timeout||8000);
+  try{
+    const res=await fetch(API_BASE+path,{...options,signal:ctrl.signal,headers:{'Content-Type':'application/json',...(authToken?{Authorization:'Bearer '+authToken}:{}),...(options.headers||{})}});
+    const text=await res.text();
+    const data=text?JSON.parse(text):null;
+    if(!res.ok)throw new Error(data?.message||data?.errors?.[0]?.msg||'Request failed ('+res.status+')');
+    return data;
+  }finally{clearTimeout(t);}
+}
+function saveSession(token,user){authToken=token||'';if(authToken)localStorage.setItem('nichukulieToken',authToken);if(user)localStorage.setItem('nichukulieUser',JSON.stringify(user));}
+function clearSession(){authToken='';localStorage.removeItem('nichukulieToken');localStorage.removeItem('nichukulieUser');}
+function normalizeErrand(e){
+  const runner=e.runner?`${e.runner.firstName||''} ${e.runner.lastName||''}`.trim():'—';
+  const customer=e.customer?`${e.customer.firstName||''} ${e.customer.lastName||''}`.trim():'Customer';
+  return{_id:e._id,id:e.orderId||e.id||e._id,type:cap(String(e.type||'custom')),rawType:e.type||'custom',pickup:e.pickup||'',delivery:e.delivery||'',pickupCounty:e.pickupCounty||'Nairobi',deliveryCounty:e.deliveryCounty||'Nairobi',serviceLevel:e.serviceLevel||'same_day',distanceKm:e.distanceKm||0,runner,customer,status:e.status||'pending',amount:e.price?.total||e.amount||0,date:e.scheduledDate?new Date(e.scheduledDate).toISOString().split('T')[0]:(e.date||'')};
+}
+function setCurrentUser(user){
+  const fn=user.firstName||user.name?.split(' ')[0]||'User';
+  const ln=user.lastName||user.name?.split(' ').slice(1).join(' ')||'';
+  currentUser={...user,name:`${fn} ${ln}`.trim(),role:user.role==='customer'?'user':user.role,firstName:fn,lastName:ln};
+  if(currentUser.role!=='admin'){
+    const ini=((fn[0]||'U')+(ln[0]||'')).toUpperCase();
+    setText('userNameSidebar',currentUser.name);setText('userAvatarSidebar',ini);setText('greetName',fn);
+    setText('walletPhone',currentUser.phone||'—');
+    const sn=document.getElementById('settingsName'),se=document.getElementById('settingsEmail'),sp=document.getElementById('settingsPhone');
+    if(sn)sn.value=currentUser.name;if(se)se.value=currentUser.email||'';if(sp)sp.value=currentUser.phone||'';
+  }else{
+    const ini=((fn[0]||'A')+(ln[0]||'D')).toUpperCase();
+    setText('adminNameSidebar',currentUser.name);setText('adminAvatarSidebar',ini);
+  }
+}
+
+// ===== DATA LOADING =====
+async function loadUserData(){
+  if(!authToken)return;
+  try{const data=await apiFetch('/api/errands/my?limit=50');errands=(data.errands||[]).map(normalizeErrand);}
+  catch(err){errands=[];showToast(err.message||'Could not load your errands.','error');}
+  renderActiveErrands();renderErrands(errands);updateDashboardStats();renderHistory();updateErrandsNavBadge();
+}
+async function loadAdminData(){
+  if(!authToken)return;
+  try{
+    const[statsData,errandData,userData,runnerData]=await Promise.all([apiFetch('/api/admin/stats'),apiFetch('/api/errands?limit=100'),apiFetch('/api/admin/users'),apiFetch('/api/admin/runners')]);
+    setText('adminStatToday',statsData.todayErrands??'0');setText('adminStatRunners',statsData.activeRunners??'0');
+    setText('adminStatRevenue','Ksh '+Number(statsData.totalRevenue||0).toLocaleString());setText('adminStatPending',statsData.pendingErrands??'0');
+    setText('adminPendingBadge',(statsData.pendingErrands??0)+' pending');setText('adminErrandsBadge',statsData.pendingErrands??'—');
+    errands=(errandData.errands||[]).map(normalizeErrand);
+    customers=(userData||[]).map(u=>{const fullName=`${u.firstName} ${u.lastName}`.trim();const own=errands.filter(e=>e.customer===fullName);return{name:fullName,phone:u.phone||'—',email:u.email,errands:own.length,spent:own.filter(e=>e.status!=='cancelled').reduce((s,e)=>s+Number(e.amount||0),0),joined:u.createdAt?new Date(u.createdAt).toLocaleDateString('en-KE',{month:'short',year:'numeric'}):'—',status:u.isActive?'active':'inactive',_id:u._id};});
+    runners=(runnerData||[]).map(r=>({id:r._id,name:`${r.firstName} ${r.lastName}`,rating:null,completed:null,status:r.isActive?'online':'offline',area:r.address||'Nairobi'}));
+  }catch(err){errands=[];customers=[];runners=[];showToast(err.message||'Could not load admin data.','error');}
+  initAdmin();
+}
+
+// ===== AUTH =====
+async function handleLogin(){
+  const email=document.getElementById('loginEmail').value.trim(),pass=document.getElementById('loginPass').value;
+  let ok=true;
+  if(!/\S+@\S+\.\S+/.test(email)){show('loginEmailErr');ok=false;}else hide('loginEmailErr');
+  if(!pass){show('loginPassErr');ok=false;}else hide('loginPassErr');
+  if(!ok)return;
+  const btn=document.getElementById('loginSubmitBtn');
+  if(btn){btn.disabled=true;btn.textContent='Signing in...';}
+  try{
+    const data=await apiFetch('/api/auth/login',{method:'POST',body:JSON.stringify({email,password:pass})});
+    saveSession(data.token,data.user);setCurrentUser(data.user);
+    if(currentUser.role==='admin'){showScreen('screenAdmin');await loadAdminData();}
+    else{showScreen('screenUser');initUser();await loadUserData();}
+    showToast('Signed in.','success');
+  }catch(err){showToast(err.name==='AbortError'?'Could not reach the server. Is the backend running?':err.message,'error');}
+  finally{if(btn){btn.disabled=false;btn.textContent='Sign in';}}
+}
+async function handleRegister(){
+  const first=v('regFirst'),last=v('regLast'),email=v('regEmail'),phone=v('regPhone'),pass=v('regPass'),conf=v('regPassConf');
+  let ok=true;
+  if(!first){show('regFirstErr');ok=false;}else hide('regFirstErr');
+  if(!last){show('regLastErr');ok=false;}else hide('regLastErr');
+  if(!/\S+@\S+\.\S+/.test(email)){show('regEmailErr');ok=false;}else hide('regEmailErr');
+  if(!/^(07|01)\d{8}$/.test(phone.replace(/\s/g,''))){show('regPhoneErr');ok=false;}else hide('regPhoneErr');
+  if(pass.length<8||!/\d/.test(pass)||!/[^a-zA-Z0-9]/.test(pass)){show('regPassErr');ok=false;}else hide('regPassErr');
+  if(pass!==conf){show('regPassConfErr');ok=false;}else hide('regPassConfErr');
+  if(!ok)return;
+  const btn=document.getElementById('regSubmitBtn');
+  if(btn){btn.disabled=true;btn.textContent='Creating account...';}
+  try{
+    const data=await apiFetch('/api/auth/register',{method:'POST',body:JSON.stringify({firstName:first,lastName:last,email,phone,password:pass})});
+    saveSession(data.token,data.user);setCurrentUser(data.user);
+    showScreen('screenUser');initUser();await loadUserData();
+    showToast('Account created. Welcome to Nichukulie.','success');
+  }catch(err){showToast(err.message||'Could not create account. Please try again.','error');}
+  finally{if(btn){btn.disabled=false;btn.textContent='Create account';}}
+}
+function logout(){currentUser=null;clearSession();showScreen('screenLogin');showToast('Signed out.','info');}
+
+// ===== NAVIGATION =====
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
+function switchUserTab(tab,el){
+  document.querySelectorAll('[id^="userTab-"]').forEach(t=>t.classList.add('hidden'));
+  document.getElementById('userTab-'+tab)?.classList.remove('hidden');
+  document.querySelectorAll('.screen#screenUser .nav-item').forEach(n=>n.classList.remove('active'));
+  if(el)el.classList.add('active');
+  if(tab==='new-errand')setTimeout(ensureMap,0);
+}
+function switchAdminTab(tab,el){
+  document.querySelectorAll('[id^="adminTab-"]').forEach(t=>t.classList.add('hidden'));
+  document.getElementById('adminTab-'+tab)?.classList.remove('hidden');
+  document.querySelectorAll('.screen#screenAdmin .nav-item').forEach(n=>n.classList.remove('active'));
+  if(el)el.classList.add('active');
+}
+function setTheme(theme){document.body.dataset.theme=theme;localStorage.setItem('nichukulieTheme',theme);document.querySelectorAll('#themeToggle,#adminThemeToggle').forEach(b=>{if(b)b.textContent=theme==='dark'?'☀':'☾';});}
+function toggleTheme(){setTheme(document.body.dataset.theme==='dark'?'light':'dark');}
+function prefillErrand(type){switchUserTab('new-errand',null);document.getElementById('errandType').value=type;updatePrice();document.getElementById('errandPickup').focus();}
+function updateErrandsNavBadge(){const a=errands.filter(e=>e.status==='active'||e.status==='pending').length;const b=document.getElementById('errandsNavBadge');if(b){b.textContent=a;b.style.display=a>0?'':'none';}}
+
+// ===== MAP =====
+const NAIROBI_CENTER=[-1.286389,36.817223];
+function ensureMap(){
+  const mapEl=document.getElementById('errandMap');
+  if(!mapEl||typeof L==='undefined')return;
+  if(leafletMap){leafletMap.invalidateSize();return;}
+  leafletMap=L.map(mapEl,{center:NAIROBI_CENTER,zoom:12});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(leafletMap);
+}
+async function geocodePlace(q){
+  const url=`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ke&q=${encodeURIComponent(q)}`;
+  const res=await fetch(url,{headers:{'Accept-Language':'en'}});
+  if(!res.ok)throw new Error('Geocoding failed');
+  const results=await res.json();
+  return results.length?{lat:parseFloat(results[0].lat),lon:parseFloat(results[0].lon)}:null;
+}
+async function previewRoute(){
+  ensureMap();
+  const pickup=document.getElementById('errandPickup').value.trim();
+  const delivery=document.getElementById('errandDelivery').value.trim();
+  if(!pickup||!delivery){showToast('Enter pickup and delivery locations first.','warning');return;}
+  const btn=document.querySelector('[onclick="previewRoute()"]');
+  if(btn){btn.disabled=true;btn.textContent='Finding route...';}
+  try{
+    const[from,to]=await Promise.all([geocodePlace(pickup+', Kenya'),geocodePlace(delivery+', Kenya')]);
+    if(!from||!to){showToast('Could not find one of those locations. Try a more specific address.','warning');return;}
+    const r=await (await fetch(`https://router.project-osrm.org/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=full&geometries=geojson`)).json();
+    if(!r.routes?.length){showToast('Route not found.','warning');return;}
+    const route=r.routes[0];
+    const coords=route.geometry.coordinates.map(([lon,lat])=>[lat,lon]);
+    if(routeLine)leafletMap.removeLayer(routeLine);
+    if(pickupMarker)leafletMap.removeLayer(pickupMarker);
+    if(deliveryMarker)leafletMap.removeLayer(deliveryMarker);
+    routeLine=L.polyline(coords,{color:'#1D9E75',weight:5}).addTo(leafletMap);
+    pickupMarker=L.marker([from.lat,from.lon]).addTo(leafletMap).bindPopup('Pickup: '+pickup);
+    deliveryMarker=L.marker([to.lat,to.lon]).addTo(leafletMap).bindPopup('Delivery: '+delivery);
+    leafletMap.fitBounds(routeLine.getBounds(),{padding:[24,24]});
+    const km=(route.distance/1000).toFixed(1),mins=Math.round(route.duration/60);
+    setText('routeDistance',km+' km');setText('routeDuration',mins+' min');
+    updateDistancePrice(route.distance);
+  }catch(err){showToast('Could not load the route. Please try again.','error');}
+  finally{if(btn){btn.disabled=false;btn.textContent='Preview route';}}
+}
+
+// ===== PRICING (real Nairobi market rates) =====
+function calcPrice(typeKey,interCounty,expressLevel,distanceKm){
+  const rate=RATES[typeKey]||RATES.custom;
+  const base=rate.base;
+  const distFee=distanceKm?Math.round(distanceKm*PER_KM_RATE):50;
+  const express=expressLevel==='express'?EXPRESS_SURCHARGE:0;
+  const coverage=interCounty?INTERCOUNTY_BASE:0;
+  const total=base+distFee+SERVICE_CHARGE+express+coverage;
+  return{base,distFee,express,coverage,total};
+}
+function updatePrice(){
+  const type=document.getElementById('errandType').value||'custom';
+  const interCounty=document.getElementById('pickupCounty')?.value!==document.getElementById('deliveryCounty')?.value;
+  const level=document.getElementById('serviceLevel')?.value||'same_day';
+  const p=calcPrice(type,interCounty,level,0);
+  const rate=RATES[type]||RATES.custom;
+  setText('priceBase','Ksh '+p.base);setText('priceDist','Ksh '+p.distFee);
+  setText('coverageFee',interCounty?'Inter-county +Ksh '+p.coverage:'Local county');
+  document.getElementById('priceTotal').textContent='Ksh '+p.total;
+  document.getElementById('mpesaAmt').textContent='Ksh '+p.total;
+}
+function updateDistancePrice(distMeters){
+  const type=document.getElementById('errandType').value||'custom';
+  const interCounty=document.getElementById('pickupCounty')?.value!==document.getElementById('deliveryCounty')?.value;
+  const level=document.getElementById('serviceLevel')?.value||'same_day';
+  const km=Math.max(1,distMeters/1000);
+  const p=calcPrice(type,interCounty,level,km);
+  setText('priceBase','Ksh '+p.base);setText('priceDist','Ksh '+p.distFee);
+  setText('coverageFee',interCounty?'Inter-county +Ksh '+p.coverage:'Local county');
+  document.getElementById('priceTotal').textContent='Ksh '+p.total;
+  document.getElementById('mpesaAmt').textContent='Ksh '+p.total;
+}
+
+// ===== BOOKING =====
+function bookErrand(){
+  const type=document.getElementById('errandType').value,pickup=document.getElementById('errandPickup').value.trim(),delivery=document.getElementById('errandDelivery').value.trim(),date=document.getElementById('errandDate').value;
+  let ok=true;
+  if(!type){show('errandTypeErr');ok=false;}else hide('errandTypeErr');
+  if(!pickup){show('errandPickupErr');ok=false;}else hide('errandPickupErr');
+  if(!delivery){show('errandDeliveryErr');ok=false;}else hide('errandDeliveryErr');
+  if(!date){show('errandDateErr');ok=false;}else hide('errandDateErr');
+  if(!ok)return;
+  const total=Number(document.getElementById('priceTotal').textContent.replace(/\D/g,''))||280;
+  const interCounty=document.getElementById('pickupCounty').value!==document.getElementById('deliveryCounty').value;
+  pendingBooking={rawType:type,type:cap(type),pickup,delivery,pickupCounty:document.getElementById('pickupCounty').value,deliveryCounty:document.getElementById('deliveryCounty').value,serviceLevel:interCounty?'intercounty':document.getElementById('serviceLevel').value,runner:'—',status:'pending',amount:total,date};
+  openMpesa();
+}
+function openMpesa(){
+  ['mpesaSteps'].forEach(id=>document.getElementById(id)?.classList.remove('hidden'));
+  ['mpesaProcessing','mpesaSuccess','mpesaError'].forEach(id=>document.getElementById(id)?.classList.add('hidden'));
+  document.getElementById('mpesaBtns').classList.remove('hidden');
+  document.getElementById('mpesaModal').classList.add('open');
+}
+function closeMpesa(){document.getElementById('mpesaModal').classList.remove('open');}
+async function processMpesa(){
+  const phone=document.getElementById('mpesaPhone').value.replace(/\s/g,'');
+  if(!/^(07|01)\d{8}$/.test(phone)){show('mpesaPhoneErr');return;}else hide('mpesaPhoneErr');
+  document.getElementById('mpesaSteps').classList.add('hidden');
+  document.getElementById('mpesaBtns').classList.add('hidden');
+  document.getElementById('mpesaProcessing').classList.remove('hidden');
+  if(!authToken||!pendingBooking){showToast('Session expired. Please sign in again.','error');closeMpesa();return;}
+  try{
+    const created=await apiFetch('/api/errands',{method:'POST',body:JSON.stringify({type:pendingBooking.rawType,pickup:pendingBooking.pickup,delivery:pendingBooking.delivery,pickupCounty:pendingBooking.pickupCounty,deliveryCounty:pendingBooking.deliveryCounty,serviceLevel:pendingBooking.serviceLevel,distanceKm:Number(document.getElementById('routeDistance').textContent.replace(/[^\d.]/g,''))||0,scheduledDate:pendingBooking.date,timeSlot:document.getElementById('errandTime').value,notes:document.getElementById('errandNotes').value,price:{base:Number(document.getElementById('priceBase').textContent.replace(/\D/g,''))||0,distance:Number(document.getElementById('priceDist').textContent.replace(/\D/g,''))||0,service:SERVICE_CHARGE,total:pendingBooking.amount}})});
+    await apiFetch('/api/mpesa/stkpush',{method:'POST',body:JSON.stringify({phone,amount:pendingBooking.amount,errandId:created._id}),timeout:15000});
+    showToast('STK Push sent. Enter your M-Pesa PIN.','info');
+    // Poll for up to 30s
+    let confirmed=false;
+    for(let i=0;i<10;i++){
+      await new Promise(r=>setTimeout(r,3000));
+      try{const s=await apiFetch('/api/mpesa/status/'+encodeURIComponent(created.checkoutId||''));if(s.status==='completed'){confirmed=true;break;}if(s.status==='failed')break;}catch{}
+    }
+    document.getElementById('mpesaProcessing').classList.add('hidden');
+    if(confirmed){document.getElementById('mpesaSuccess').classList.remove('hidden');showToast('Payment confirmed! Errand booked.','success');await loadUserData();}
+    else{document.getElementById('mpesaError').classList.remove('hidden');}
+    pendingBooking=null;setTimeout(closeMpesa,3500);
+  }catch(err){
+    document.getElementById('mpesaProcessing').classList.add('hidden');
+    document.getElementById('mpesaError').classList.remove('hidden');
+    showToast(err.message||'Payment initiation failed.','error');
+    pendingBooking=null;
+  }
+}
+
+// ===== TRACKING =====
+async function trackOrder(){
+  const id=document.getElementById('trackId').value.trim();
+  if(!id){showToast('Enter an order ID.','warning');return;}
+  try{
+    const tracked=await apiFetch('/api/errands/track/'+encodeURIComponent(id));
+    const e=normalizeErrand(tracked);
+    const statusMap={pending:1,assigned:2,active:3,completed:4};
+    const step=statusMap[e.status]||1;
+    [1,2,3,4].forEach(n=>{
+      const c=document.getElementById('trackStep'+n),l=document.getElementById('trackLine'+n);
+      if(c){c.className='step-circle'+(n<step?' done':n===step?' active':'');c.textContent=n<step?'✓':n;}
+      if(l){l.className='step-line'+(n<step?' done':'');}
+    });
+    const rc=document.getElementById('trackRunnerCard');
+    if(rc&&e.runner&&e.runner!=='—')rc.innerHTML=`<div class="runner-card" style="margin-top:20px"><div class="runner-avatar">${e.runner.split(' ').map(n=>n[0]).join('')}</div><div style="flex:1"><div style="font-weight:600;font-size:14px">${e.runner}</div><div class="text-muted">Runner assigned</div></div></div>`;
+    else if(rc)rc.innerHTML='';
+    const notes={pending:'Waiting for a runner to be assigned.',assigned:'A runner has been assigned and is preparing for pickup.',active:'Your runner is en route.',completed:'Delivered successfully.',cancelled:'This errand was cancelled.'};
+    const sn=document.getElementById('trackStatusNote');
+    if(sn)sn.textContent=notes[e.status]||'Tracking your order...';
+    document.getElementById('trackResult').classList.remove('hidden');
+    showToast('Order found: '+e.id,'success');
+  }catch{showToast('Order not found. Check the ID and try again.','error');document.getElementById('trackResult').classList.add('hidden');}
+}
+
+// ===== FILTERS =====
+function filterErrands(f,el){document.querySelectorAll('#userTab-my-errands .tab').forEach(t=>t.classList.remove('active'));if(el)el.classList.add('active');renderErrands(f==='all'?errands:errands.filter(e=>e.status===f));}
+function filterAdminErrands(f){renderAdminErrandsTable(f==='all'?errands:errands.filter(e=>e.status===f));}
+function searchCustomers(q){renderCustomersTable(customers.filter(c=>c.name.toLowerCase().includes(q.toLowerCase())||c.email.toLowerCase().includes(q.toLowerCase())));}
+
+// ===== RENDERERS =====
+function renderErrands(data){
+  const el=document.getElementById('errandsList');if(!el)return;
+  if(!data.length){el.innerHTML='<div class="empty-state">No errands here yet. <a style="color:var(--green);cursor:pointer;font-weight:600" onclick="switchUserTab(\'new-errand\',null)">Book one now</a></div>';return;}
+  el.innerHTML=data.map(e=>`<div class="errand-card"><div class="errand-card-header"><div><div class="errand-type">${e.type} errand</div><div class="errand-id">${e.id}</div></div><span class="badge badge-${e.status==='active'?'green':e.status==='pending'?'amber':e.status==='completed'?'blue':'red'}">${cap(e.status)}</span></div><div class="errand-detail">${e.pickup} → ${e.delivery}</div><div class="errand-detail">Runner: ${e.runner}</div><div class="errand-detail">${e.date}</div><div class="errand-footer"><div class="errand-price">Ksh ${Number(e.amount).toLocaleString()}</div>${e.status==='active'||e.status==='pending'?`<button class="btn btn-outline btn-sm" onclick="switchUserTab('track',null);document.getElementById('trackId').value='${e.id}';trackOrder()">Track</button>`:''}</div></div>`).join('');
+}
+function renderActiveErrands(){
+  const active=errands.filter(e=>e.status==='active'||e.status==='pending');
+  const el=document.getElementById('activeErrandsList');if(!el)return;
+  el.innerHTML=active.length?active.map(e=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--gray-100)"><div><div style="font-weight:600;font-size:14px">${e.type} — ${e.id}</div><div class="text-muted">${e.pickup} → ${e.delivery}</div></div><div style="text-align:right"><span class="badge badge-${e.status==='active'?'green':'amber'}">${cap(e.status)}</span><div style="font-size:13px;color:var(--green);font-weight:700;margin-top:4px">Ksh ${Number(e.amount).toLocaleString()}</div></div></div>`).join(''):'<div class="empty-state">No active errands. <a style="color:var(--green);cursor:pointer;font-weight:600" onclick="switchUserTab(\'new-errand\',null)">Book one now</a></div>';
+}
+function renderHistory(){
+  const el=document.getElementById('historyList');if(!el)return;
+  const past=errands.filter(e=>e.status==='completed'||e.status==='cancelled');
+  if(!past.length){el.innerHTML='<div class="empty-state">No completed errands yet.</div>';return;}
+  el.innerHTML=past.map(e=>`<div class="errand-card"><div class="errand-card-header"><div><div class="errand-type">${e.type} errand</div><div class="errand-id">${e.id}</div></div><span class="badge badge-${e.status==='completed'?'blue':'red'}">${cap(e.status)}</span></div><div class="errand-detail">${e.pickup} → ${e.delivery}</div><div class="errand-footer"><div class="errand-price">Ksh ${Number(e.amount).toLocaleString()}</div><span class="text-muted">${e.date}</span></div></div>`).join('');
+}
+function renderAdminRecentErrands(){
+  const el=document.getElementById('adminRecentErrands');if(!el)return;
+  if(!errands.length){el.innerHTML='<tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px">No errands yet.</td></tr>';return;}
+  el.innerHTML=errands.slice(0,5).map(e=>`<tr><td><code style="font-size:12px">${e.id}</code></td><td>${e.type}</td><td>${e.customer}</td><td><span class="badge badge-${e.status==='active'?'green':e.status==='pending'?'amber':e.status==='completed'?'blue':'red'}">${cap(e.status)}</span></td><td style="font-weight:600;color:var(--green)">Ksh ${Number(e.amount).toLocaleString()}</td></tr>`).join('');
+}
+function renderAdminErrandsTable(data){
+  const rows=data||errands,el=document.getElementById('adminErrandsTable');if(!el)return;
+  if(!rows.length){el.innerHTML='<tr><td colspan="9" class="text-muted" style="text-align:center;padding:24px">No errands found.</td></tr>';return;}
+  el.innerHTML=rows.map(e=>`<tr><td><code style="font-size:12px">${e.id}</code></td><td>${e.customer}</td><td>${e.type}</td><td style="font-size:13px">${e.pickup}</td><td style="font-size:13px">${e.delivery}</td><td>${e.runner||'—'}</td><td style="font-weight:600;color:var(--green)">Ksh ${Number(e.amount).toLocaleString()}</td><td><span class="badge badge-${e.status==='active'?'green':e.status==='pending'?'amber':e.status==='completed'?'blue':'red'}">${cap(e.status)}</span></td><td><button class="btn btn-sm btn-outline" onclick="assignErrand('${e.id}')">${e.status==='pending'?'Assign':'Update'}</button></td></tr>`).join('');
+}
+async function assignErrand(id){
+  const errand=errands.find(e=>e.id===id);
+  const runner=runners.find(r=>r.status==='online');
+  if(!errand){showToast('Errand not found.','error');return;}
+  if(!runner){showToast('No online runners available right now.','warning');return;}
+  if(errand._id){
+    try{await apiFetch('/api/errands/'+errand._id,{method:'PATCH',body:JSON.stringify({status:'active',runner:runner.id})});}
+    catch(err){showToast(err.message||'Assignment failed.','error');return;}
+  }
+  errand.runner=runner.name;errand.status='active';
+  renderAdminErrandsTable();renderAdminRecentErrands();
+  showToast('Assigned '+errand.id+' to '+runner.name+'.','success');
+}
+function renderRunners(){
+  const el=document.getElementById('runnersList');if(!el)return;
+  if(!runners.length){el.innerHTML='<div class="empty-state">No runners registered yet.</div>';return;}
+  el.innerHTML=runners.slice(0,4).map(r=>`<div class="runner-card" style="margin-bottom:10px"><div class="runner-avatar">${r.name.split(' ').map(n=>n[0]).join('')}</div><div style="flex:1"><div style="font-weight:600;font-size:14px">${r.name}</div><div class="text-muted">${r.area}</div></div><div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:${r.status==='online'?'var(--green)':'var(--gray-200)'}"></div><span style="font-size:12px;font-weight:600;color:${r.status==='online'?'var(--green)':'var(--gray-400)'}">${cap(r.status)}</span></div></div>`).join('');
+}
+function renderAdminRunnersGrid(){
+  const el=document.getElementById('adminRunnersGrid');if(!el)return;
+  if(!runners.length){el.innerHTML='<div class="empty-state">No runners registered yet.</div>';return;}
+  el.innerHTML=runners.map(r=>`<div class="card" style="padding:20px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><div class="runner-avatar">${r.name.split(' ').map(n=>n[0]).join('')}</div><div><div style="font-weight:700">${r.name}</div><div class="text-muted">${r.area}</div></div></div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span class="text-muted">Rating</span><span>${r.rating??'—'}</span></div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:12px"><span class="text-muted">Completed</span><span>${r.completed??'—'}</span></div><span class="badge badge-${r.status==='online'?'green':'red'}">${cap(r.status)}</span></div>`).join('');
+}
+function renderCustomersTable(data){
+  const rows=data||customers,el=document.getElementById('adminCustomersTable');if(!el)return;
+  if(!rows.length){el.innerHTML='<tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px">No customers yet.</td></tr>';return;}
+  el.innerHTML=rows.map(c=>`<tr><td style="font-weight:600">${c.name}</td><td>${c.phone}</td><td>${c.email}</td><td>${c.errands}</td><td style="color:var(--green);font-weight:600">Ksh ${c.spent.toLocaleString()}</td><td>${c.joined}</td><td><span class="badge badge-${c.status==='active'?'green':'red'}">${cap(c.status)}</span></td></tr>`).join('');
+}
+function renderRevenueChart(){
+  const el=document.getElementById('revenueChart'),dEl=document.getElementById('revenueDays');if(!el)return;
+  const completed=errands.filter(e=>e.status==='completed');
+  if(!completed.length){el.innerHTML='<div class="empty-state" style="width:100%">Revenue chart will populate as errands are completed.</div>';if(dEl)dEl.innerHTML='';return;}
+  const byDay={};completed.forEach(e=>{byDay[e.date]=(byDay[e.date]||0)+Number(e.amount||0);});
+  const days=Object.keys(byDay).sort().slice(-7),vals=days.map(d=>byDay[d]),max=Math.max(...vals,1);
+  el.innerHTML=vals.map((v,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="font-size:11px;color:var(--gray-600)">Ksh ${(v/1000).toFixed(1)}K</div><div style="width:100%;background:${i===vals.length-1?'var(--green)':'var(--green-light)'};border-radius:4px 4px 0 0;height:${Math.round(v/max*100)}px"></div></div>`).join('');
+  if(dEl)dEl.innerHTML=days.map(d=>`<div style="flex:1;text-align:center;font-size:11px;color:var(--gray-400)">${new Date(d+'T00:00:00').toLocaleDateString('en-KE',{weekday:'short'})}</div>`).join('');
+}
+function updateDashboardStats(){
+  const active=errands.filter(e=>e.status==='active'||e.status==='pending').length;
+  const completed=errands.filter(e=>e.status==='completed').length;
+  const spent=errands.filter(e=>e.status!=='cancelled').reduce((s,e)=>s+Number(e.amount||0),0);
+  setText('statTotalErrands',errands.length||'0');setText('statActiveErrands',active||'0');
+  setText('statCompletedErrands',completed||'0');setText('statTotalSpent','Ksh '+spent.toLocaleString());
+  setText('heroTotalErrands',errands.length||'0');setText('heroLiveRoutes',active||'0');
+  setText('heroTotalSpent','Ksh '+spent.toLocaleString());
+}
+function renderTransactions(){
+  const el=document.getElementById('transactionTable');if(!el)return;
+  if(!payments.length){el.innerHTML='<tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px">No transactions yet.</td></tr>';return;}
+  el.innerHTML=payments.map(p=>`<tr><td><code style="font-size:12px">${p.ref}</code></td><td>${p.type}</td><td style="font-weight:600;color:var(--green)">Ksh ${p.amount}</td><td>${p.date}</td><td><span class="badge badge-${p.status==='completed'?'green':'red'}">${cap(p.status)}</span></td></tr>`).join('');
+}
+
+// ===== COVERAGE & COUNTIES =====
+function initNationwideControls(){
+  ['pickupCounty','deliveryCounty'].forEach(id=>{const s=document.getElementById(id);if(!s||s.options.length)return;s.innerHTML=KENYA_COUNTIES.map(c=>`<option value="${c}" ${c==='Nairobi'?'selected':''}>${c}</option>`).join('');});
+  const el=document.getElementById('coverageCountyList');
+  if(el){el.innerHTML=KENYA_COUNTIES.map(c=>`<span class="coverage-pill ${PRIORITY_HUBS.includes(c)?'active':''}">${c}</span>`).join('');setText('coverageCount',KENYA_COUNTIES.length);}
+}
+
+// ===== INIT =====
+function initUser(){
+  initNationwideControls();
+  const dateEl=document.getElementById('errandDate');if(dateEl)dateEl.min=new Date().toISOString().split('T')[0];
+  renderActiveErrands();renderErrands(errands);renderTransactions();updateDashboardStats();renderHistory();
+}
+function initAdmin(){
+  initNationwideControls();
+  setText('todayDate',new Date().toLocaleDateString('en-KE',{weekday:'short',day:'numeric',month:'short',year:'numeric'}));
+  renderAdminRecentErrands();renderAdminErrandsTable();renderRunners();renderAdminRunnersGrid();renderCustomersTable();renderRevenueChart();updateDashboardStats();
+}
+
+// ===== TOAST =====
+function showToast(msg,type='success'){
+  const icons={success:'✅',error:'❌',info:'ℹ️',warning:'⚠'};
+  const t=document.createElement('div');t.className=`toast ${type}`;
+  t.innerHTML=`<span>${icons[type]||'✅'}</span><span class="toast-msg">${msg}</span>`;
+  document.getElementById('toastContainer').appendChild(t);setTimeout(()=>t.remove(),4500);
+}
+
+// ===== HELPERS =====
+function v(id){return document.getElementById(id).value.trim();}
+function show(id){document.getElementById(id).classList.remove('hidden');}
+function hide(id){document.getElementById(id).classList.add('hidden');}
+function setText(id,val){const el=document.getElementById(id);if(el)el.textContent=val;}
+function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):'';}
+function togglePass(id,btn){const el=document.getElementById(id);el.type=el.type==='password'?'text':'password';btn.textContent=el.type==='password'?'show':'hide';}
+function checkStrength(p){
+  const f=document.getElementById('strengthFill'),l=document.getElementById('strengthLabel');
+  let s=0;if(p.length>=8)s++;if(/[A-Z]/.test(p))s++;if(/\d/.test(p))s++;if(/[^a-zA-Z0-9]/.test(p))s++;
+  const c=['','#E24B4A','#EF9F27','#378ADD','#1D9E75'],lb=['','Weak','Fair','Good','Strong'];
+  if(f){f.style.width=s*25+'%';f.style.background=c[s];}if(l){l.textContent=lb[s]||'';l.style.color=c[s];}
+}
+async function restoreSession(){
+  if(!authToken)return;
+  try{
+    const u=await apiFetch('/api/auth/me');setCurrentUser(u);
+    if(currentUser.role==='admin'){showScreen('screenAdmin');await loadAdminData();}
+    else{showScreen('screenUser');initUser();await loadUserData();}
+  }catch{clearSession();}
+}
+setTheme(localStorage.getItem('nichukulieTheme')||'light');
+restoreSession();
+</script>
+</body>
+</html>
