@@ -26,65 +26,84 @@ const app = express();
 
 const PORT = process.env.PORT || 5000;
 
+
 // ── CORS ────────────────────────────────────────────────────
-const allowedOrigins = [
+
+const allowedOrigins = new Set([
   process.env.FRONTEND_URL,
   `http://localhost:${PORT}`,
   'http://localhost:5000',
   'http://127.0.0.1:5000',
   'http://localhost:5500',
+  'http://127.0.0.1:5500',
   'null'
-].filter(Boolean);
+].filter(Boolean));
 
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.has(origin)) {
       return callback(null, true);
     }
-    callback(null, false);
+
+    console.warn(`CORS blocked: ${origin}`);
+    return callback(null, false);
   },
   credentials: true
 }));
 
-// ── MIDDLEWARE ──────────────────────────────────────────────
-app.use(helmet({
-  contentSecurityPolicy: false
-}));
+
+// ── SECURITY & MIDDLEWARE ───────────────────────────────────
+
+app.use(
+  helmet({
+    contentSecurityPolicy: false
+  })
+);
 
 app.use(express.json({ limit: '100kb' }));
 
 app.use(
-  morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev')
+  morgan(
+    process.env.NODE_ENV === 'production'
+      ? 'combined'
+      : 'dev'
+  )
 );
 
 app.use('/api', apiLimiter);
 
 
 // ── API ROUTES ──────────────────────────────────────────────
+
 app.use('/api/auth', authRoutes);
 app.use('/api/errands', errandRoutes);
 app.use('/api/mpesa', mpesaRoutes);
 app.use('/api/admin', adminRoutes);
 
 
-// ── FRONTEND STATIC FILES ───────────────────────────────────
-// Serves frontend/index.html, css, js, images, etc.
-app.use(express.static(path.join(__dirname, '../frontend')));
+// ── FRONTEND SERVING ────────────────────────────────────────
+
+const frontendPath = path.join(__dirname, 'frontend');
+
+console.log(`Frontend path: ${frontendPath}`);
+
+app.use(express.static(frontendPath));
 
 
 // ── HEALTH CHECK ────────────────────────────────────────────
+
 app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     service: 'Nichukulie API',
-    environment: process.env.NODE_ENV || 'development',
+    env: process.env.NODE_ENV || 'development',
     time: new Date().toISOString()
   });
 });
 
 
-// ── FRONTEND FALLBACK ────────────────────────────────────────
-// Allows direct navigation to frontend routes
+// ── FRONTEND FALLBACK ───────────────────────────────────────
+
 app.get('*', (req, res, next) => {
 
   if (req.path.startsWith('/api')) {
@@ -92,26 +111,31 @@ app.get('*', (req, res, next) => {
   }
 
   res.sendFile(
-    path.join(__dirname, '../frontend/index.html')
+    path.join(frontendPath, 'index.html'),
+    (err) => {
+      if (err) {
+        next(err);
+      }
+    }
   );
 });
 
 
 // ── ERROR HANDLING ──────────────────────────────────────────
+
 app.use(notFound);
 app.use(errorHandler);
 
 
 // ── START SERVER ────────────────────────────────────────────
+
 if (require.main === module) {
 
   app.listen(PORT, () => {
 
     console.log(`Nichukulie API running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(
-      `Frontend: ${path.join(__dirname, '../frontend')}`
-    );
+    console.log(`Frontend: ${frontendPath}`);
 
     setTimeout(connectMongo, 0);
 
