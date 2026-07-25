@@ -4,10 +4,9 @@
 
 require('dotenv').config();
 
-// Some Windows networks cause Node's internal DNS resolver (c-ares) to
-// fail on mongodb+srv:// SRV lookups, even though the OS resolver (and
-// tools like nslookup) succeed. Pointing Node at public DNS servers
-// directly works around this — see: https://www.mongodb.com/community/forums/t/dns-operation-failed-error-querysrv-querytxt/12704
+// Fix: Node's internal DNS resolver fails mongodb+srv:// SRV lookups
+// on some networks (common on Windows and certain cloud providers).
+// Pointing at public DNS servers works around this reliably.
 const dns = require('dns');
 dns.setServers(['8.8.8.8', '1.1.1.1']);
 
@@ -27,17 +26,20 @@ const mpesaRoutes = require('./routes/mpesaRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
+
+// Render assigns PORT automatically — fallback to 5000 for local dev
 const PORT = process.env.PORT || 5000;
 
-// ── MIDDLEWARE ──────────────────────────────────────────────
-// Origins allowed to call this API. Includes common local dev setups:
-// the backend serving its own frontend (5000), and VS Code's Live
-// Server extension, which defaults to port 5500.
+// ── CORS ────────────────────────────────────────────────────
+// In production both frontend and backend are on the same origin
+// (Express serves index.html). In dev, allow localhost ports.
 const allowedOrigins = new Set([
   process.env.FRONTEND_URL,
-  'http://localhost:5000',
-  'http://127.0.0.1:5000',
-  'http://localhost:5500',
+  `http://localhost:${PORT}`,
+  `http://localhost:5000`,
+  `http://127.0.0.1:${PORT}`,
+  `http://127.0.0.1:5000`,
+  'http://localhost:5500',   // VS Code Live Server (dev only)
   'http://127.0.0.1:5500',
   'null',
 ].filter(Boolean));
@@ -45,39 +47,57 @@ const allowedOrigins = new Set([
 app.use(cors({
   origin(origin, callback) {
     if (!origin || allowedOrigins.has(origin)) return callback(null, true);
-    console.warn(`CORS blocked request from origin: ${origin}`);
+    console.warn(`CORS blocked: ${origin}`);
     return callback(null, false);
   },
+  credentials: true,
 }));
-// helmet() with default config sets a strict Content-Security-Policy
-// that blocks inline <script> tags — which breaks this app since the
-// entire frontend JS is inline in index.html. We disable only the CSP
-// component (which would need a nonce/hash approach for inline scripts
-// to work securely anyway) while keeping all other protections active:
-// X-Content-Type-Options, X-Frame-Options, HSTS, referrer policy, etc.
+
+// ── SECURITY & MIDDLEWARE ───────────────────────────────────
+// Disable only contentSecurityPolicy — it blocks the inline <script>
+// in index.html. All other helmet protections remain active.
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(express.json({ limit: '100kb' })); // small, deliberate cap — this API has no legitimate need for large payloads
-app.use(morgan('dev'));
+app.use(express.json({ limit: '100kb' }));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use('/api', apiLimiter);
+
+// ── STATIC FRONTEND ─────────────────────────────────────────
+// Render root directory is set to "backend/" so __dirname is the
+// backend folder. frontend/ sits one level up at the repo root.
 app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
-// ── ROUTES ──────────────────────────────────────────────────
+// ── API ROUTES ───────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/errands', errandRoutes);
 app.use('/api/mpesa', mpesaRoutes);
 app.use('/api/admin', adminRoutes);
 
-// ── HEALTH CHECK ────────────────────────────────────────────
-app.get('/health', (req, res) => res.json({ status: 'ok', service: 'Nichukulie API', time: new Date() }));
+// ── HEALTH CHECK ─────────────────────────────────────────────
+app.get('/health', (req, res) => res.json({
+  status: 'ok',
+  service: 'Nichukulie API',
+  env: process.env.NODE_ENV || 'development',
+  time: new Date().toISOString(),
+}));
 
-// ── 404 + ERROR HANDLER ─────────────────────────────────────
+// ── SPA FALLBACK ─────────────────────────────────────────────
+// Any non-API route that doesn't match a static file serves
+// index.html — this means /health and direct URL navigation works.
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api/')) return next();
+  res.sendFile(path.join(__dirname, '..', 'frontend', 'index.html'));
+});
+
+// ── 404 + ERROR HANDLER ──────────────────────────────────────
 app.use(notFound);
 app.use(errorHandler);
 
-// ── START ───────────────────────────────────────────────────
+// ── START ────────────────────────────────────────────────────
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`Nichukulie API running on port ${PORT}`);
+    console.log(`   Nichukulie API running on port ${PORT}`);
+    console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`   Frontend: ${path.join(__dirname, '..', 'frontend')}`);
     setTimeout(connectMongo, 0);
   });
 }
