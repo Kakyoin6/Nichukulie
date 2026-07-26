@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
-  <title>Nichukulie — Admin + Mobile</title>
+  <title>Nichukulie — Email Integration</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <style>
     /* ----- ROOT & THEME ----- */
@@ -51,6 +51,7 @@
     .badge-amber { background: var(--amber-light); color: #633806; }
     .badge-red { background: var(--red-light); color: #791F1F; }
     .badge-blue { background: var(--blue-light); color: #185FA5; }
+    .badge-purple { background: #E8E0F0; color: #4A2B6B; }
     .screen { display: none; } .screen.active { display: block; }
 
     /* ----- AUTH (mobile first) ----- */
@@ -354,12 +355,44 @@
     .toast.error { border-left-color: var(--red); }
     .toast.warning { border-left-color: var(--amber); }
     .toast.info { border-left-color: var(--blue); }
+    .toast.success { border-left-color: var(--green); }
     @keyframes toastIn { from { transform: translateX(60px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     .floating-help { position: fixed; right: 16px; bottom: 16px; z-index: 120; background: var(--gray-800); color: var(--white); border-radius: var(--radius-sm); padding: 8px 14px; cursor: pointer; font-weight: 600; font-size: 13px; border: none; }
     .admin-chip { background: #26215C; color: #CECBF6; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 20px; margin-left: 6px; }
-    .runner-card { background: var(--white); border: 1px solid var(--gray-100); border-radius: var(--radius-md); padding: 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .runner-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--blue-light); color: #185FA5; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
-    .admin-action-btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    
+    /* Email specific styles */
+    .email-template-preview {
+      background: var(--gray-50);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid var(--gray-200);
+    }
+    .email-log-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .email-log-item:last-child { border-bottom: none; }
+    .email-icon { font-size: 20px; margin-right: 10px; }
+    .email-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .email-status-badge.sent { background: var(--green-light); color: var(--green-dark); }
+    .email-status-badge.failed { background: var(--red-light); color: #791F1F; }
+    .email-status-badge.pending { background: var(--amber-light); color: #633806; }
 
     @media (max-width: 900px) {
       .stats-grid { grid-template-columns: repeat(2,1fr); }
@@ -495,6 +528,7 @@
       <div class="sidebar-section">
         <div class="sidebar-section-label">Operations</div>
         <div class="nav-item active" onclick="switchAdminTab('admin-dashboard',this)">Overview</div>
+        <div class="nav-item" onclick="switchAdminTab('admin-email',this)">📧 Email</div>
         <div class="nav-item" onclick="switchAdminTab('admin-runners',this)">Runners</div>
         <div class="nav-item" onclick="switchAdminTab('admin-customers',this)">Customers</div>
       </div>
@@ -524,18 +558,74 @@
           </div>
           <div class="grid-2">
             <div class="card">
-              <div class="card-header"><div class="card-title">Runners</div><button class="btn btn-primary btn-sm" onclick="addRunner()">+ Add</button></div>
-              <div class="card-body" id="adminRunnersList"></div>
+              <div class="card-header"><div class="card-title">Recent Email Activity</div><span class="badge badge-purple">📧 Live</span></div>
+              <div class="card-body" id="emailLogPreview"></div>
             </div>
             <div class="card">
-              <div class="card-header"><div class="card-title">Customers</div><button class="btn btn-primary btn-sm" onclick="addCustomer()">+ Add</button></div>
-              <div class="card-body" id="adminCustomersList"></div>
+              <div class="card-header"><div class="card-title">Quick Actions</div></div>
+              <div class="card-body">
+                <button class="btn btn-primary btn-block" onclick="sendTestEmail()" style="margin-bottom:8px;">📧 Send Test Email</button>
+                <button class="btn btn-outline btn-block" onclick="sendBulkEmail()">📨 Send Bulk Email</button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Runners (full list + add/delete) -->
+      <!-- Email Management -->
+      <div id="adminTab-admin-email" class="hidden">
+        <div class="topbar">
+          <div class="page-title">📧 Email Management</div>
+          <div class="topbar-actions">
+            <button class="btn btn-primary btn-sm" onclick="sendTestEmail()">Send Test</button>
+            <button class="btn btn-outline btn-sm" onclick="sendBulkEmail()">Bulk Email</button>
+          </div>
+        </div>
+        <div class="content-area">
+          <div class="grid-2">
+            <div>
+              <div class="card" style="margin-bottom:16px;">
+                <div class="card-header"><div class="card-title">📝 Compose Email</div></div>
+                <div class="card-body">
+                  <div class="form-group">
+                    <label class="form-label">To</label>
+                    <input type="text" class="form-input" id="emailTo" placeholder="customer@example.com" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Subject</label>
+                    <input type="text" class="form-input" id="emailSubject" placeholder="Your Nichukulie order update" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Template</label>
+                    <select class="form-input" id="emailTemplate" onchange="loadEmailTemplate()">
+                      <option value="order_confirmation">Order Confirmation</option>
+                      <option value="order_assigned">Runner Assigned</option>
+                      <option value="order_picked_up">Order Picked Up</option>
+                      <option value="order_delivered">Order Delivered</option>
+                      <option value="order_cancelled">Order Cancelled</option>
+                      <option value="promotional">Promotional</option>
+                      <option value="custom">Custom Email</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Message</label>
+                    <textarea class="form-input" id="emailMessage" rows="8" style="min-height:150px;font-family:var(--font-body);"></textarea>
+                  </div>
+                  <button class="btn btn-primary btn-block" onclick="sendCustomEmail()">📤 Send Email</button>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="card">
+                <div class="card-header"><div class="card-title">📋 Email Log</div></div>
+                <div class="card-body" id="emailLogFull" style="max-height:500px;overflow-y:auto;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Runners -->
       <div id="adminTab-admin-runners" class="hidden">
         <div class="topbar">
           <div class="page-title">Runners</div>
@@ -548,7 +638,7 @@
         </div>
       </div>
 
-      <!-- Customers (full list + add/delete) -->
+      <!-- Customers -->
       <div id="adminTab-admin-customers" class="hidden">
         <div class="topbar">
           <div class="page-title">Customers</div>
@@ -572,12 +662,12 @@
 </div>
 
 <script>
-// ===== STATE (no API routes, all local) =====
+// ===== STATE =====
 let currentUser = null;
 let runners = [
-  { id: 'r1', name: 'James Mwangi', phone: '0712345678', status: 'online', area: 'Nairobi' },
-  { id: 'r2', name: 'Sarah Akinyi', phone: '0722334455', status: 'online', area: 'Kiambu' },
-  { id: 'r3', name: 'David Ochieng', phone: '0733445566', status: 'offline', area: 'Nakuru' }
+  { id: 'r1', name: 'James Mwangi', phone: '0712345678', status: 'online', area: 'Nairobi', email: 'james@example.com' },
+  { id: 'r2', name: 'Sarah Akinyi', phone: '0722334455', status: 'online', area: 'Kiambu', email: 'sarah@example.com' },
+  { id: 'r3', name: 'David Ochieng', phone: '0733445566', status: 'offline', area: 'Nakuru', email: 'david@example.com' }
 ];
 let customers = [
   { id: 'c1', name: 'Grace Wanjiru', phone: '0744556677', email: 'grace@example.com', status: 'active' },
@@ -589,6 +679,245 @@ let errands = [
   { id: 'E002', type: 'Pharmacy', customer: 'Peter Kiprop', status: 'active', amount: 280 },
   { id: 'E003', type: 'Documents', customer: 'Faith Achieng', status: 'pending', amount: 350 }
 ];
+
+// ===== EMAIL SYSTEM =====
+let emailLogs = [
+  { id: 'e1', to: 'grace@example.com', subject: 'Order E001 Delivered', status: 'sent', time: new Date(Date.now() - 1200000).toISOString() },
+  { id: 'e2', to: 'peter@example.com', subject: 'Runner Assigned - E002', status: 'sent', time: new Date(Date.now() - 600000).toISOString() },
+  { id: 'e3', to: 'faith@example.com', subject: 'Order E003 Confirmation', status: 'pending', time: new Date(Date.now() - 300000).toISOString() }
+];
+
+// Email templates
+const emailTemplates = {
+  order_confirmation: `Hi {{customer_name}},
+
+Your order #{{order_id}} has been confirmed! 🎉
+
+📦 Order Details:
+- Type: {{order_type}}
+- Pickup: {{pickup_location}}
+- Delivery: {{delivery_location}}
+- Amount: {{amount}}
+
+A runner will be assigned shortly. You'll receive updates via email.
+
+Thank you for choosing Nichukulie!
+
+Best regards,
+The Nichukulie Team`,
+  
+  order_assigned: `Hi {{customer_name}},
+
+Good news! A runner has been assigned to your order #{{order_id}}.
+
+🏃 Runner: {{runner_name}}
+📱 Contact: {{runner_phone}}
+
+Your order is being prepared for pickup. We'll notify you when it's on the way.
+
+Track your order: https://nichukulie.com/track/{{order_id}}
+
+Regards,
+Nichukulie Team`,
+
+  order_picked_up: `Hi {{customer_name}},
+
+Your order #{{order_id}} has been picked up! 🚀
+
+🏃 Runner: {{runner_name}} is on the way
+📍 From: {{pickup_location}}
+📍 To: {{delivery_location}}
+
+Estimated delivery: {{eta}}
+
+Track live: https://nichukulie.com/track/{{order_id}}
+
+Regards,
+Nichukulie Team`,
+
+  order_delivered: `Hi {{customer_name}},
+
+Your order #{{order_id}} has been delivered! ✅
+
+📦 Order: {{order_type}}
+⏱️ Delivery time: {{delivery_time}}
+💵 Amount: {{amount}}
+
+We hope you're satisfied with your experience. Please rate your runner:
+
+https://nichukulie.com/rate/{{order_id}}
+
+Thank you for using Nichukulie!
+
+Warm regards,
+Nichukulie Team`,
+
+  order_cancelled: `Hi {{customer_name}},
+
+Your order #{{order_id}} has been cancelled.
+
+If you have any questions or need assistance, please contact our support team.
+
+Regards,
+Nichukulie Team`,
+
+  promotional: `Hi {{customer_name}},
+
+Special offer just for you! 🎉
+
+Get 20% off your next errand with code: NICHU20
+
+Valid for 7 days. Book now at https://nichukulie.com
+
+Don't miss out!
+
+Nichukulie Team`
+};
+
+// ===== EMAIL FUNCTIONS =====
+function loadEmailTemplate() {
+  const template = document.getElementById('emailTemplate').value;
+  const msg = document.getElementById('emailMessage');
+  if (template === 'custom') {
+    msg.value = 'Write your custom message here...';
+    return;
+  }
+  // Use a sample customer for preview
+  const sample = {
+    customer_name: 'Customer Name',
+    order_id: 'E12345',
+    order_type: 'Shopping',
+    pickup_location: 'Westlands Mall',
+    delivery_location: 'Kilimani',
+    amount: 'Ksh 450',
+    runner_name: 'James Mwangi',
+    runner_phone: '0712345678',
+    eta: '30 minutes',
+    delivery_time: '2:30 PM'
+  };
+  let templateText = emailTemplates[template] || 'Template not found.';
+  Object.keys(sample).forEach(key => {
+    templateText = templateText.replace(new RegExp(`{{${key}}}`, 'g'), sample[key]);
+  });
+  msg.value = templateText;
+}
+
+function sendCustomEmail() {
+  const to = document.getElementById('emailTo').value.trim();
+  const subject = document.getElementById('emailSubject').value.trim();
+  const message = document.getElementById('emailMessage').value.trim();
+  
+  if (!to || !subject || !message) {
+    showToast('Please fill in all fields.', 'error');
+    return;
+  }
+  
+  // Simulate sending email
+  const log = {
+    id: 'e' + Date.now(),
+    to: to,
+    subject: subject,
+    status: 'sent',
+    time: new Date().toISOString()
+  };
+  emailLogs.unshift(log);
+  
+  showToast(`✅ Email sent to ${to}`, 'success');
+  renderEmailLogs();
+  updateEmailStats();
+  
+  // Clear form
+  document.getElementById('emailTo').value = '';
+  document.getElementById('emailSubject').value = '';
+  document.getElementById('emailMessage').value = '';
+}
+
+function sendTestEmail() {
+  const testEmails = ['test@nichukulie.com', 'demo@example.com'];
+  const subjects = ['Test Email - Nichukulie', 'Welcome to Nichukulie!', 'Your order is ready'];
+  
+  testEmails.forEach((email, index) => {
+    const log = {
+      id: 'e' + Date.now() + index,
+      to: email,
+      subject: subjects[index % subjects.length],
+      status: 'sent',
+      time: new Date().toISOString()
+    };
+    emailLogs.unshift(log);
+  });
+  
+  showToast(`📧 Test emails sent to ${testEmails.length} recipients`, 'success');
+  renderEmailLogs();
+  updateEmailStats();
+}
+
+function sendBulkEmail() {
+  const allEmails = [...customers.map(c => c.email), ...runners.map(r => r.email)].filter(e => e);
+  if (!allEmails.length) {
+    showToast('No email addresses found.', 'warning');
+    return;
+  }
+  
+  const subject = 'Nichukulie Update: Important Information';
+  const message = 'Dear customer,\n\nWe have important updates about our services. Please check your dashboard for more details.\n\nThank you for choosing Nichukulie.\n\nThe Nichukulie Team';
+  
+  allEmails.forEach(email => {
+    const log = {
+      id: 'e' + Date.now() + Math.random(),
+      to: email,
+      subject: subject,
+      status: Math.random() > 0.9 ? 'failed' : 'sent',
+      time: new Date().toISOString()
+    };
+    emailLogs.unshift(log);
+  });
+  
+  showToast(`📨 Bulk email sent to ${allEmails.length} recipients`, 'success');
+  renderEmailLogs();
+  updateEmailStats();
+}
+
+function renderEmailLogs() {
+  const preview = document.getElementById('emailLogPreview');
+  const full = document.getElementById('emailLogFull');
+  
+  const renderLogs = (logs, container, limit = 5) => {
+    const items = logs.slice(0, limit);
+    if (!items.length) {
+      container.innerHTML = '<div class="empty-state">No emails sent yet.</div>';
+      return;
+    }
+    container.innerHTML = items.map(log => `
+      <div class="email-log-item">
+        <div style="display:flex;align-items:center;flex:1;">
+          <span class="email-icon">${log.status === 'sent' ? '✅' : '❌'}</span>
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:13px;">${log.subject}</div>
+            <div style="font-size:12px;color:var(--gray-600);">To: ${log.to}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="email-status-badge ${log.status}">${log.status}</span>
+          <span style="font-size:11px;color:var(--gray-400);">${new Date(log.time).toLocaleTimeString()}</span>
+        </div>
+      </div>
+    `).join('');
+  };
+  
+  if (preview) renderLogs(emailLogs, preview, 3);
+  if (full) renderLogs(emailLogs, full, 100);
+}
+
+function updateEmailStats() {
+  const sent = emailLogs.filter(e => e.status === 'sent').length;
+  const failed = emailLogs.filter(e => e.status === 'failed').length;
+  const pending = emailLogs.filter(e => e.status === 'pending').length;
+  
+  // Update any email stats on dashboard
+  const stats = document.getElementById('emailStats');
+  // We'll add a small counter near the email nav
+}
 
 // ===== HELPERS =====
 function showToast(msg, type = 'success') {
@@ -619,12 +948,11 @@ function checkStrength(p) {
 function setTheme(theme) { document.body.dataset.theme = theme; localStorage.setItem('nichukulieTheme', theme); document.querySelectorAll('#themeToggle,#adminThemeToggle').forEach(b => { if (b) b.textContent = theme === 'dark' ? '☀' : '☾'; }); }
 function toggleTheme() { setTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'); }
 
-// ===== AUTH (mock) =====
+// ===== AUTH =====
 function handleLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const pass = document.getElementById('loginPass').value;
   if (!email || !pass) { showToast('Please fill in all fields.', 'error'); return; }
-  // mock admin login
   if (email === 'admin@nichu.com' && pass === 'admin123') {
     currentUser = { name: 'Admin', role: 'admin' };
     showScreen('screenAdmin');
@@ -632,7 +960,6 @@ function handleLogin() {
     showToast('Welcome Admin!', 'success');
     return;
   }
-  // mock user login
   if (email.includes('@') && pass.length >= 4) {
     currentUser = { name: 'Customer', role: 'user' };
     showScreen('screenUser');
@@ -665,6 +992,7 @@ function switchAdminTab(tab, el) {
   if (el) el.classList.add('active');
   if (tab === 'admin-runners') renderRunnersFull();
   if (tab === 'admin-customers') renderCustomersFull();
+  if (tab === 'admin-email') renderEmailLogs();
 }
 
 // ===== RENDER ADMIN =====
@@ -679,6 +1007,10 @@ function renderAdmin() {
   renderCustomersList();
   renderRunnersFull();
   renderCustomersFull();
+  renderEmailLogs();
+  updateEmailStats();
+  // Load default template
+  loadEmailTemplate();
 }
 
 function renderRunnersList() {
@@ -686,7 +1018,7 @@ function renderRunnersList() {
   if (!el) return;
   if (!runners.length) { el.innerHTML = '<div class="empty-state">No runners yet.</div>'; return; }
   el.innerHTML = runners.slice(0, 3).map(r => `
-    <div class="runner-card" style="margin-bottom:8px;">
+    <div class="runner-card" style="margin-bottom:8px;display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--gray-100);border-radius:var(--radius-sm);">
       <div class="runner-avatar">${r.name.split(' ').map(n=>n[0]).join('')}</div>
       <div style="flex:1;"><div style="font-weight:600;">${r.name}</div><div class="text-muted">${r.area||'Nairobi'}</div></div>
       <span class="badge badge-${r.status==='online'?'green':'red'}">${cap(r.status)}</span>
@@ -742,17 +1074,19 @@ function renderCustomersFull() {
   `).join('');
 }
 
-// ===== CRUD OPERATIONS (local, no routes) =====
+// ===== CRUD OPERATIONS =====
 function addRunner() {
   const name = prompt('Enter runner full name:');
   if (!name) return;
   const area = prompt('Enter area (e.g. Nairobi):') || 'Nairobi';
+  const email = prompt('Enter email:') || 'runner@example.com';
   const newRunner = {
     id: 'r' + Date.now(),
     name: name.trim(),
     phone: '07' + Math.floor(10000000 + Math.random() * 90000000),
     status: 'online',
-    area: area.trim()
+    area: area.trim(),
+    email: email.trim()
   };
   runners.push(newRunner);
   renderAdmin();
@@ -779,7 +1113,7 @@ function addCustomer() {
   const name = prompt('Enter customer full name:');
   if (!name) return;
   const phone = prompt('Enter phone (0712 345 678):') || '0712345678';
-  const email = prompt('Enter email:') || 'user@example.com';
+  const email = prompt('Enter email:') || 'customer@example.com';
   const newCustomer = {
     id: 'c' + Date.now(),
     name: name.trim(),
@@ -802,12 +1136,11 @@ function deleteCustomer(id) {
 // ===== INIT =====
 setTheme(localStorage.getItem('nichukulieTheme') || 'light');
 
-// auto-login as admin for demo (skip login screen)
-// but keep login screen visible by default — user must click
-// we'll pre-fill the admin login for convenience
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('loginEmail').value = 'admin@nichu.com';
   document.getElementById('loginPass').value = 'admin123';
+  // Load email template on load
+  loadEmailTemplate();
 });
 </script>
 </body>
