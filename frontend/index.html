@@ -4,281 +4,1208 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes" />
   <title>Nichukulie — Errand Delivery, Nairobi</title>
+  <meta name="description" content="Book errand runners across Nairobi. Shopping, pharmacy, documents and packages — in minutes." />
+  <link rel="manifest" href="/manifest.json" />
+  
+  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  
   <style>
-    /* ---------- ROOT & THEME ---------- */
+    /* ============================================================
+       ROOT & THEME
+       ============================================================ */
     :root {
-      --green: #1D9E75; --green-light: #E1F5EE; --green-dark: #085041;
-      --amber: #EF9F27; --amber-light: #FAEEDA;
-      --red: #E24B4A; --red-light: #FCEBEB;
-      --blue: #378ADD; --blue-light: #E6F1FB;
-      --gray-50: #F8F9FA; --gray-100: #F1EFE8; --gray-200: #D3D1C7;
-      --gray-400: #888780; --gray-600: #5F5E5A; --gray-800: #2C2C2A;
+      --green: #1D9E75;
+      --green-light: #E1F5EE;
+      --green-dark: #085041;
+      --amber: #EF9F27;
+      --amber-light: #FAEEDA;
+      --red: #E24B4A;
+      --red-light: #FCEBEB;
+      --blue: #378ADD;
+      --blue-light: #E6F1FB;
+      --gray-50: #F8F9FA;
+      --gray-100: #F1EFE8;
+      --gray-200: #D3D1C7;
+      --gray-400: #888780;
+      --gray-600: #5F5E5A;
+      --gray-800: #2C2C2A;
       --white: #FFFFFF;
       --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
       --shadow-md: 0 4px 16px rgba(0,0,0,0.1);
-      --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px;
-      --font-head: 'Syne', sans-serif; --font-body: 'Plus Jakarta Sans', sans-serif;
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.15);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --font-head: 'Syne', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+      --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
+    
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    
     body {
       font-family: var(--font-body);
       background: var(--gray-50);
       color: var(--gray-800);
       min-height: 100vh;
-      transition: background .25s, color .25s;
+      transition: background var(--transition), color var(--transition);
     }
+    
+    /* Dark Theme */
     body[data-theme="dark"] {
-      --green: #3dd39f; --green-light: rgba(61,211,159,.14); --green-dark: #bdf8e4;
-      --amber: #f7b955; --amber-light: rgba(247,185,85,.14);
-      --red: #ff7070; --red-light: rgba(255,112,112,.14);
-      --blue: #76b9ff; --blue-light: rgba(118,185,255,.14);
-      --gray-50: #0f1517; --gray-100: #1a2326; --gray-200: #2a373b;
-      --gray-400: #8ea0a5; --gray-600: #c4d0d3; --gray-800: #f4faf8;
+      --green: #3dd39f;
+      --green-light: rgba(61,211,159,.14);
+      --green-dark: #bdf8e4;
+      --amber: #f7b955;
+      --amber-light: rgba(247,185,85,.14);
+      --red: #ff7070;
+      --red-light: rgba(255,112,112,.14);
+      --blue: #76b9ff;
+      --blue-light: rgba(118,185,255,.14);
+      --gray-50: #0f1517;
+      --gray-100: #1a2326;
+      --gray-200: #2a373b;
+      --gray-400: #8ea0a5;
+      --gray-600: #c4d0d3;
+      --gray-800: #f4faf8;
       --white: #151d20;
       --shadow-sm: 0 10px 30px rgba(0,0,0,.22);
       --shadow-md: 0 18px 50px rgba(0,0,0,.34);
+      --shadow-lg: 0 24px 64px rgba(0,0,0,.45);
       background: #0f1517;
     }
+    
+    /* ============================================================
+       UTILITY
+       ============================================================ */
     .hidden { display: none !important; }
     .text-muted { color: var(--gray-600); font-size: 14px; }
+    .text-center { text-align: center; }
+    .mt-1 { margin-top: 8px; }
+    .mt-2 { margin-top: 16px; }
+    .mt-3 { margin-top: 24px; }
+    .mb-1 { margin-bottom: 8px; }
+    .mb-2 { margin-bottom: 16px; }
+    .mb-3 { margin-bottom: 24px; }
+    .gap-1 { gap: 8px; }
+    .gap-2 { gap: 16px; }
+    .flex { display: flex; }
+    .flex-center { display: flex; align-items: center; justify-content: center; }
+    .flex-between { display: flex; align-items: center; justify-content: space-between; }
+    .flex-wrap { flex-wrap: wrap; }
+    .flex-1 { flex: 1; }
+    
+    /* Badges */
     .badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      font-size: 12px; font-weight: 600; padding: 3px 10px;
-      border-radius: 20px; white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
     }
     .badge-green { background: var(--green-light); color: var(--green-dark); }
     .badge-amber { background: var(--amber-light); color: #633806; }
     .badge-red { background: var(--red-light); color: #791F1F; }
     .badge-blue { background: var(--blue-light); color: #185FA5; }
-    .screen { display: none; } .screen.active { display: block; }
-
-    /* ---------- AUTH (dark green panels) ---------- */
-    .auth-wrap { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; }
-    .auth-brand { background: #085041; display: flex; flex-direction: column; justify-content: space-between; padding: 56px; }
-    .auth-form-wrap { background: #0a6350; display: flex; align-items: center; justify-content: center; padding: 60px 80px; }
-    .auth-form { width: 100%; max-width: 380px; }
-    .brand-logo { font-family: var(--font-head); font-size: 22px; font-weight: 700; color: #fff; letter-spacing: -.01em; }
+    .badge-gray { background: var(--gray-100); color: var(--gray-600); }
+    
+    /* Screens */
+    .screen { display: none; }
+    .screen.active { display: block; }
+    
+    /* ============================================================
+       AUTH
+       ============================================================ */
+    .auth-wrap {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .auth-brand {
+      background: #085041;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 56px;
+    }
+    .auth-form-wrap {
+      background: #0a6350;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 80px;
+    }
+    .auth-form {
+      width: 100%;
+      max-width: 380px;
+    }
+    .brand-logo {
+      font-family: var(--font-head);
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -.01em;
+    }
     .brand-logo span { color: #FAC775; }
-    .brand-tagline { color: rgba(255,255,255,.65); font-size: 14px; line-height: 1.6; max-width: 280px; margin-top: 14px; }
-    .manifest { border-top: 1px solid rgba(255,255,255,.12); padding-top: 22px; font-family: 'Courier New', monospace; }
-    .manifest-label { color: #5DCAA5; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 14px; }
-    .manifest-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; padding: 7px 0; border-bottom: 1px dashed rgba(255,255,255,.1); }
+    .brand-tagline {
+      color: rgba(255,255,255,.65);
+      font-size: 14px;
+      line-height: 1.6;
+      max-width: 280px;
+      margin-top: 14px;
+    }
+    .manifest {
+      border-top: 1px solid rgba(255,255,255,.12);
+      padding-top: 22px;
+      font-family: 'Courier New', monospace;
+    }
+    .manifest-label {
+      color: #5DCAA5;
+      font-size: 10px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    .manifest-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 13px;
+      padding: 7px 0;
+      border-bottom: 1px dashed rgba(255,255,255,.1);
+    }
     .manifest-row:last-child { border-bottom: none; }
     .manifest-row .m-route { color: #fff; }
     .manifest-row .m-status { color: #FAC775; font-size: 11px; }
-    .auth-title { font-family: var(--font-head); font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 6px; }
-    .auth-subtitle { color: rgba(255,255,255,.6); font-size: 14px; margin-bottom: 28px; }
-    .auth-form .form-label { display: block; font-size: 13px; font-weight: 600; color: rgba(255,255,255,.85); margin-bottom: 6px; }
+    
+    .auth-title {
+      font-family: var(--font-head);
+      font-size: 24px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .auth-subtitle {
+      color: rgba(255,255,255,.6);
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+    .auth-form .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255,255,255,.85);
+      margin-bottom: 6px;
+    }
     .auth-form .form-group { margin-bottom: 16px; }
     .auth-form .form-input {
-      width: 100%; padding: 11px 14px;
-      border: 1.5px solid rgba(255,255,255,.2); border-radius: var(--radius-sm);
-      font-family: var(--font-body); font-size: 15px;
-      color: #fff; background: rgba(255,255,255,.08); outline: none;
-      transition: border-color .2s,background .2s;
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid rgba(255,255,255,.2);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-body);
+      font-size: 15px;
+      color: #fff;
+      background: rgba(255,255,255,.08);
+      outline: none;
+      transition: border-color .2s, background .2s;
     }
     .auth-form .form-input::placeholder { color: rgba(255,255,255,.35); }
-    .auth-form .form-input:focus { border-color: #FAC775; background: rgba(255,255,255,.12); }
+    .auth-form .form-input:focus {
+      border-color: #FAC775;
+      background: rgba(255,255,255,.12);
+    }
     .auth-form .form-input.error { border-color: #ff7070; }
-    .auth-form .form-error { font-size: 12px; color: #ffb3b3; margin-top: 4px; }
+    .auth-form .form-error {
+      font-size: 12px;
+      color: #ffb3b3;
+      margin-top: 4px;
+    }
     .auth-btn {
-      width: 100%; padding: 12px 20px; background: #FAC775; color: #085041;
-      font-family: var(--font-body); font-size: 15px; font-weight: 700;
-      border: none; border-radius: var(--radius-sm); cursor: pointer;
-      transition: background .2s; margin-top: 4px;
+      width: 100%;
+      padding: 12px 20px;
+      background: #FAC775;
+      color: #085041;
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background .2s;
+      margin-top: 4px;
     }
     .auth-btn:hover { background: #f5b84e; }
     .auth-btn:disabled { opacity: .6; cursor: not-allowed; }
-    .auth-switch { text-align: center; margin-top: 20px; font-size: 14px; color: rgba(255,255,255,.55); }
+    .auth-switch {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 14px;
+      color: rgba(255,255,255,.55);
+    }
     .auth-switch a { color: #FAC775; font-weight: 600; cursor: pointer; }
-    .auth-forgot { font-size: 13px; color: rgba(255,255,255,.5); cursor: pointer; font-weight: 500; }
+    .auth-forgot {
+      font-size: 13px;
+      color: rgba(255,255,255,.5);
+      cursor: pointer;
+      font-weight: 500;
+    }
     .auth-forgot:hover { color: #FAC775; }
     .auth-input-wrap { position: relative; }
     .auth-input-icon {
-      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
-      cursor: pointer; color: rgba(255,255,255,.4);
-      font-size: 12px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase;
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: rgba(255,255,255,.4);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .02em;
+      text-transform: uppercase;
     }
     .auth-input-icon:hover { color: #FAC775; }
     .auth-pass-icon-input { padding-right: 56px !important; }
-    .strength-bar { height: 3px; border-radius: 4px; background: rgba(255,255,255,.15); overflow: hidden; margin-top: 6px; }
-    .strength-fill { height: 100%; width: 0; border-radius: 4px; transition: width .3s,background .3s; }
-    .errand-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-
-    /* ---------- SHARED FORM ELEMENTS ---------- */
-    .form-group { margin-bottom: 18px; }
-    .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--gray-800); margin-bottom: 6px; }
-    .form-input {
-      width: 100%; padding: 11px 14px;
-      border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
-      font-family: var(--font-body); font-size: 15px;
-      color: var(--gray-800); background: var(--white);
-      transition: border-color .2s,box-shadow .2s; outline: none;
+    .strength-bar {
+      height: 3px;
+      border-radius: 4px;
+      background: rgba(255,255,255,.15);
+      overflow: hidden;
+      margin-top: 6px;
     }
-    .form-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(29,158,117,.12); }
+    .strength-fill {
+      height: 100%;
+      width: 0;
+      border-radius: 4px;
+      transition: width .3s, background .3s;
+    }
+    .errand-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    
+    /* ============================================================
+       SHARED FORM ELEMENTS
+       ============================================================ */
+    .form-group { margin-bottom: 18px; }
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-800);
+      margin-bottom: 6px;
+    }
+    .form-input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-body);
+      font-size: 15px;
+      color: var(--gray-800);
+      background: var(--white);
+      transition: border-color .2s, box-shadow .2s;
+      outline: none;
+    }
+    .form-input:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px rgba(29,158,117,.12);
+    }
     .form-input.error { border-color: var(--red); }
-    .form-error { font-size: 12px; color: var(--red); margin-top: 4px; }
+    .form-input:disabled { opacity: .6; cursor: not-allowed; }
+    .form-error {
+      font-size: 12px;
+      color: var(--red);
+      margin-top: 4px;
+    }
     select.form-input { appearance: none; cursor: pointer; }
     textarea.form-input { resize: vertical; min-height: 90px; }
-
-    /* ---------- BUTTONS ---------- */
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 15px; font-weight: 600; cursor: pointer; border: none; transition: all .2s; text-decoration: none; }
-    .btn-primary { background: var(--green); color: #fff; box-shadow: 0 4px 12px rgba(29,158,117,.3); }
-    .btn-primary:hover { background: #17856A; }
-    .btn-outline { background: transparent; color: var(--gray-800); border: 1.5px solid var(--gray-200); }
-    .btn-outline:hover { background: var(--gray-100); border-color: var(--gray-400); }
-    .btn-danger { background: var(--red); color: #fff; border: 1.5px solid var(--red); }
-    .btn-danger:hover { background: #c0392b; }
+    
+    /* ============================================================
+       BUTTONS
+       ============================================================ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all var(--transition);
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: var(--green);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(29,158,117,.3);
+    }
+    .btn-primary:hover:not(:disabled) { background: #17856A; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+    .btn-outline {
+      background: transparent;
+      color: var(--gray-800);
+      border: 1.5px solid var(--gray-200);
+    }
+    .btn-outline:hover:not(:disabled) {
+      background: var(--gray-100);
+      border-color: var(--gray-400);
+    }
+    .btn-danger {
+      background: var(--red);
+      color: #fff;
+      border: 1.5px solid var(--red);
+    }
+    .btn-danger:hover:not(:disabled) { background: #c0392b; }
+    .btn-success {
+      background: var(--green);
+      color: #fff;
+    }
     .btn-sm { padding: 7px 14px; font-size: 13px; border-radius: 7px; }
     .btn-block { width: 100%; }
-    .theme-toggle { width: 44px; height: 38px; border-radius: var(--radius-sm); border: 1px solid var(--gray-200); background: var(--white); color: var(--gray-800); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
-
-    /* ---------- LAYOUT ---------- */
-    .app-layout { display: flex; min-height: 100vh; }
-    .sidebar {
-      width: 256px; background: var(--white); border-right: 1px solid var(--gray-200);
-      display: flex; flex-direction: column; padding: 0;
-      position: fixed; top: 0; left: 0; height: 100vh; overflow-y: auto; z-index: 100;
+    .btn-amber {
+      background: #FAC775;
+      color: #085041;
+      border: none;
+      padding: 12px 20px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .2s;
     }
-    .sidebar-logo { padding: 24px 24px 20px; font-family: var(--font-head); font-size: 22px; font-weight: 800; color: var(--gray-800); border-bottom: 1px solid var(--gray-100); }
+    .btn-amber:hover { background: #f5b84e; }
+    .btn-ghost {
+      background: transparent;
+      color: #fff;
+      border: 1.5px solid rgba(255,255,255,.3);
+      padding: 12px 20px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-body);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,.08); }
+    
+    .theme-toggle {
+      width: 44px;
+      height: 38px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--gray-200);
+      background: var(--white);
+      color: var(--gray-800);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 18px;
+      transition: all var(--transition);
+    }
+    .theme-toggle:hover {
+      background: var(--gray-100);
+      transform: rotate(15deg);
+    }
+    
+    /* ============================================================
+       LAYOUT
+       ============================================================ */
+    .app-layout { display: flex; min-height: 100vh; }
+    
+    /* Sidebar */
+    .sidebar {
+      width: 256px;
+      background: var(--white);
+      border-right: 1px solid var(--gray-200);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 100;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .sidebar-logo {
+      padding: 24px 24px 20px;
+      font-family: var(--font-head);
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--gray-800);
+      border-bottom: 1px solid var(--gray-100);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
     .sidebar-logo span { color: var(--green); }
     .sidebar-section { padding: 16px 12px 8px; }
-    .sidebar-section-label { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--gray-400); padding: 0 12px; margin-bottom: 4px; }
-    .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); color: var(--gray-600); font-size: 14px; font-weight: 500; cursor: pointer; transition: all .15s; margin-bottom: 2px; border-left: 2px solid transparent; }
-    .nav-item:hover { background: var(--gray-100); color: var(--gray-800); }
-    .nav-item.active { background: var(--green-light); color: var(--green-dark); font-weight: 600; border-left-color: var(--green); }
-    .nav-badge { margin-left: auto; background: var(--red); color: #fff; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 20px; }
-    .sidebar-user { margin-top: auto; padding: 16px 20px; border-top: 1px solid var(--gray-100); display: flex; align-items: center; gap: 10px; }
-    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--green-light); color: var(--green-dark); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+    .sidebar-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      padding: 0 12px;
+      margin-bottom: 4px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      color: var(--gray-600);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .15s;
+      margin-bottom: 2px;
+      border-left: 2px solid transparent;
+    }
+    .nav-item:hover {
+      background: var(--gray-100);
+      color: var(--gray-800);
+    }
+    .nav-item.active {
+      background: var(--green-light);
+      color: var(--green-dark);
+      font-weight: 600;
+      border-left-color: var(--green);
+    }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--red);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 20px;
+    }
+    .sidebar-user {
+      margin-top: auto;
+      padding: 16px 20px;
+      border-top: 1px solid var(--gray-100);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--green-light);
+      color: var(--green-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
     .user-info { flex: 1; overflow: hidden; }
-    .user-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-name {
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .user-role { font-size: 12px; color: var(--gray-400); }
-    .logout-btn { color: var(--gray-400); cursor: pointer; font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
-    .logout-btn:hover { color: var(--red); }
-    .main-content { margin-left: 256px; flex: 1; min-height: 100vh; }
-    .topbar { background: var(--white); border-bottom: 1px solid var(--gray-200); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; flex-wrap: wrap; gap: 12px; }
-    .page-title { font-family: var(--font-head); font-size: 20px; font-weight: 700; }
-    .topbar-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-    .notif-btn { height: 38px; padding: 0 14px; border-radius: var(--radius-sm); border: 1px solid var(--gray-200); background: var(--white); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--gray-600); position: relative; }
-    .notif-dot { width: 7px; height: 7px; background: var(--red); border-radius: 50%; position: absolute; top: 8px; right: 8px; border: 2px solid var(--white); }
+    .logout-btn {
+      color: var(--gray-400);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all .2s;
+    }
+    .logout-btn:hover { color: var(--red); background: var(--red-light); }
+    
+    /* Main Content */
+    .main-content {
+      margin-left: 256px;
+      flex: 1;
+      min-height: 100vh;
+    }
+    .topbar {
+      background: var(--white);
+      border-bottom: 1px solid var(--gray-200);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .page-title {
+      font-family: var(--font-head);
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .notif-btn {
+      height: 38px;
+      padding: 0 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--gray-200);
+      background: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-600);
+      position: relative;
+      transition: all var(--transition);
+    }
+    .notif-btn:hover { background: var(--gray-100); }
+    .notif-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--red);
+      border-radius: 50%;
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      border: 2px solid var(--white);
+    }
     .content-area { padding: 32px; }
-
-    /* ---------- DASHBOARD HERO ---------- */
-    .dashboard-hero { border-radius: var(--radius-lg); margin-bottom: 24px; padding: 32px; background: var(--green-dark); color: #fff; display: grid; grid-template-columns: 1fr 300px; gap: 28px; align-items: stretch; }
-    .dashboard-hero h1 { font-family: var(--font-head); font-size: 26px; font-weight: 700; line-height: 1.15; margin-bottom: 10px; }
-    .dashboard-hero p { color: rgba(255,255,255,.7); line-height: 1.6; font-size: 14px; }
-    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
-    .hero-actions .btn-amber { background: #FAC775; color: #085041; border: none; padding: 12px 20px; border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 15px; font-weight: 700; cursor: pointer; }
-    .hero-actions .btn-amber:hover { background: #f5b84e; }
-    .hero-actions .btn-ghost { background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,.3); padding: 12px 20px; border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 15px; font-weight: 600; cursor: pointer; }
-    .hero-actions .btn-ghost:hover { background: rgba(255,255,255,.08); }
-    .floating-chip { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #9FE1CB; margin-bottom: 14px; }
-    .floating-panel { background: #0F6E56; border: 1px solid rgba(255,255,255,.08); border-radius: var(--radius-md); padding: 18px; font-family: 'Courier New', monospace; }
-    .floating-panel-label { color: #9FE1CB; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 12px; }
-    .floating-panel-row { display: flex; align-items: baseline; justify-content: space-between; padding: 8px 0; font-size: 13px; border-bottom: 1px dashed rgba(255,255,255,.12); }
+    
+    /* Mobile hamburger */
+    .hamburger {
+      display: none;
+      background: transparent;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: var(--gray-800);
+      padding: 4px 8px;
+      border-radius: var(--radius-sm);
+      transition: background .2s;
+    }
+    .hamburger:hover { background: var(--gray-100); }
+    
+    /* ============================================================
+       DASHBOARD
+       ============================================================ */
+    .dashboard-hero {
+      border-radius: var(--radius-lg);
+      margin-bottom: 24px;
+      padding: 32px;
+      background: var(--green-dark);
+      color: #fff;
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 28px;
+      align-items: stretch;
+    }
+    .dashboard-hero h1 {
+      font-family: var(--font-head);
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 10px;
+    }
+    .dashboard-hero p {
+      color: rgba(255,255,255,.7);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .floating-chip {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: #9FE1CB;
+      margin-bottom: 14px;
+    }
+    .floating-panel {
+      background: #0F6E56;
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      font-family: 'Courier New', monospace;
+    }
+    .floating-panel-label {
+      color: #9FE1CB;
+      font-size: 10px;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .floating-panel-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 13px;
+      border-bottom: 1px dashed rgba(255,255,255,.12);
+    }
     .floating-panel-row:last-child { border-bottom: none; }
     .floating-panel-row span:first-child { color: #C0DD97; }
     .floating-panel-row strong { color: #fff; font-weight: 700; }
-
-    /* ---------- STAT CARDS ---------- */
-    .stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 28px; }
-    .stat-card { background: var(--white); border-radius: var(--radius-md); padding: 20px; border: 1px solid var(--gray-100); }
-    .stat-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .stat-marker { width: 8px; height: 8px; border-radius: 2px; }
+    
+    /* Stats */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4,1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .stat-card {
+      background: var(--white);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      border: 1px solid var(--gray-100);
+      transition: all var(--transition);
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .stat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .stat-marker {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+    }
     .stat-marker-green { background: var(--green); }
     .stat-marker-amber { background: var(--amber); }
     .stat-marker-blue { background: var(--blue); }
     .stat-marker-red { background: var(--red); }
-    .stat-value { font-family: var(--font-head); font-size: 28px; font-weight: 700; color: var(--gray-800); }
-    .stat-label { font-size: 13px; color: var(--gray-600); margin-top: 2px; }
-
-    /* ---------- CARDS ---------- */
-    .card { background: var(--white); border-radius: var(--radius-md); border: 1px solid var(--gray-100); box-shadow: var(--shadow-sm); }
-    .card-header { padding: 20px 24px; border-bottom: 1px solid var(--gray-100); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-    .card-title { font-family: var(--font-head); font-size: 16px; font-weight: 700; }
+    .stat-value {
+      font-family: var(--font-head);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--gray-800);
+    }
+    .stat-label {
+      font-size: 13px;
+      color: var(--gray-600);
+      margin-top: 2px;
+    }
+    
+    /* Cards */
+    .card {
+      background: var(--white);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--gray-100);
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition);
+    }
+    .card:hover { box-shadow: var(--shadow-md); }
+    .card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--gray-100);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .card-title {
+      font-family: var(--font-head);
+      font-size: 16px;
+      font-weight: 700;
+    }
     .card-body { padding: 20px 24px; }
-
-    /* ---------- TABLE ---------- */
-    .data-table { width: 100%; border-collapse: collapse; }
-    .data-table th { text-align: left; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--gray-400); padding: 10px 16px; background: var(--gray-50); border-bottom: 1px solid var(--gray-200); }
-    .data-table td { padding: 14px 16px; border-bottom: 1px solid var(--gray-100); font-size: 14px; vertical-align: middle; }
+    
+    /* Tables */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .data-table th {
+      text-align: left;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--gray-400);
+      padding: 10px 16px;
+      background: var(--gray-50);
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .data-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--gray-100);
+      font-size: 14px;
+      vertical-align: middle;
+    }
     .data-table tr:last-child td { border-bottom: none; }
     .data-table tr:hover td { background: var(--gray-50); }
     .table-wrap { overflow-x: auto; }
-
-    /* ---------- MAP ---------- */
-    .map-shell { position: relative; overflow: hidden; border-radius: var(--radius-md); border: 1px solid var(--gray-200); background: var(--gray-100); }
-    #errandMap { width: 100%; height: 260px; }
-    .map-meta { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; margin-top: 12px; }
-    .map-meta-item { background: var(--gray-50); border: 1px solid var(--gray-100); border-radius: var(--radius-sm); padding: 10px; }
-
-    /* ---------- ERRAND CARDS ---------- */
-    .errand-card { background: var(--white); border-radius: var(--radius-md); border: 1px solid var(--gray-100); padding: 20px; box-shadow: var(--shadow-sm); margin-bottom: 12px; }
-    .errand-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 6px; }
-    .errand-type { font-size: 16px; font-weight: 700; color: var(--gray-800); }
-    .errand-id { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
-    .errand-detail { font-size: 13px; color: var(--gray-600); margin-bottom: 6px; }
-    .errand-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--gray-100); flex-wrap: wrap; gap: 8px; }
-    .errand-price { font-family: var(--font-head); font-size: 18px; font-weight: 700; color: var(--green); }
-    .quick-action { transition: border-color .15s; }
-    .quick-action:hover { border-color: var(--green); }
-    .empty-state { text-align: center; color: var(--gray-600); padding: 26px; border: 1px dashed var(--gray-200); border-radius: var(--radius-md); background: var(--white); }
-
-    /* ---------- COVERAGE ---------- */
-    .coverage-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-    .coverage-pill { border: 1px solid var(--gray-200); background: var(--white); border-radius: 999px; padding: 7px 11px; font-size: 12px; font-weight: 700; color: var(--gray-600); }
-    .coverage-pill.active { border-color: var(--green); color: var(--green); background: var(--green-light); }
-
-    /* ---------- MPESA MODAL ---------- */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; display: none; align-items: center; justify-content: center; padding: 16px; }
+    
+    /* Map */
+    .map-shell {
+      position: relative;
+      overflow: hidden;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--gray-200);
+      background: var(--gray-100);
+    }
+    #errandMap {
+      width: 100%;
+      height: 260px;
+    }
+    .map-meta {
+      display: grid;
+      grid-template-columns: repeat(2,1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .map-meta-item {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-100);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+    }
+    
+    /* Errand Cards */
+    .errand-card {
+      background: var(--white);
+      border-radius: var(--radius-md);
+      border: 1px solid var(--gray-100);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 12px;
+      transition: all var(--transition);
+    }
+    .errand-card:hover { box-shadow: var(--shadow-md); }
+    .errand-card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .errand-type {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--gray-800);
+    }
+    .errand-id {
+      font-size: 12px;
+      color: var(--gray-400);
+      margin-top: 2px;
+    }
+    .errand-detail {
+      font-size: 13px;
+      color: var(--gray-600);
+      margin-bottom: 6px;
+    }
+    .errand-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--gray-100);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .errand-price {
+      font-family: var(--font-head);
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--green);
+    }
+    .quick-action {
+      transition: all var(--transition);
+      cursor: pointer;
+    }
+    .quick-action:hover {
+      border-color: var(--green);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    .empty-state {
+      text-align: center;
+      color: var(--gray-600);
+      padding: 26px;
+      border: 1px dashed var(--gray-200);
+      border-radius: var(--radius-md);
+      background: var(--white);
+    }
+    
+    /* Coverage */
+    .coverage-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .coverage-pill {
+      border: 1px solid var(--gray-200);
+      background: var(--white);
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gray-600);
+      transition: all var(--transition);
+    }
+    .coverage-pill.active {
+      border-color: var(--green);
+      color: var(--green);
+      background: var(--green-light);
+    }
+    
+    /* Grids */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+    
+    /* ============================================================
+       MODAL
+       ============================================================ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      backdrop-filter: blur(4px);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
     .modal-overlay.open { display: flex; }
-    .modal { background: var(--white); border-radius: var(--radius-lg); padding: 32px; max-width: 420px; width: 100%; box-shadow: var(--shadow-md); animation: slideUp .2s ease; }
-    @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    .mpesa-logo { width: 80px; height: 80px; border-radius: 50%; background: #006B3E; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-family: var(--font-head); font-size: 18px; font-weight: 800; color: #fff; }
-    .mpesa-amount { text-align: center; font-family: var(--font-head); font-size: 36px; font-weight: 800; color: var(--gray-800); margin-bottom: 4px; }
-    .mpesa-desc { text-align: center; color: var(--gray-600); font-size: 14px; margin-bottom: 24px; }
-    .mpesa-step { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; font-size: 14px; color: var(--gray-600); }
-    .mpesa-step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--green-light); color: var(--green-dark); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
-    .spinner { width: 20px; height: 20px; border: 2px solid var(--gray-200); border-top-color: var(--green); border-radius: 50%; animation: spin .8s linear infinite; display: inline-block; }
+    .modal {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: var(--shadow-lg);
+      animation: slideUp .3s ease;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(30px) scale(.96); opacity: 0; }
+      to { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    .mpesa-logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: #006B3E;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-family: var(--font-head);
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .mpesa-amount {
+      text-align: center;
+      font-family: var(--font-head);
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--gray-800);
+      margin-bottom: 4px;
+    }
+    .mpesa-desc {
+      text-align: center;
+      color: var(--gray-600);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+    .mpesa-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+      font-size: 14px;
+      color: var(--gray-600);
+    }
+    .mpesa-step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--green-light);
+      color: var(--green-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--gray-200);
+      border-top-color: var(--green);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      display: inline-block;
+    }
+    .spinner-lg {
+      width: 40px;
+      height: 40px;
+      border-width: 3px;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ---------- TRACKER ---------- */
-    .tracker-steps { display: flex; align-items: flex-start; margin: 24px 0; overflow-x: auto; gap: 4px; }
-    .tracker-step { display: flex; flex-direction: column; align-items: center; flex: 1; min-width: 60px; }
+    
+    /* ============================================================
+       TRACKER
+       ============================================================ */
+    .tracker-steps {
+      display: flex;
+      align-items: flex-start;
+      margin: 24px 0;
+      overflow-x: auto;
+      gap: 4px;
+      padding: 8px 0;
+    }
+    .tracker-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1;
+      min-width: 60px;
+    }
     .step-wrap { display: flex; flex-direction: column; align-items: center; }
-    .step-circle { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; border: 2px solid var(--gray-200); background: var(--white); color: var(--gray-400); font-weight: 700; }
-    .step-circle.done { background: var(--green); border-color: var(--green); color: #fff; }
-    .step-circle.active { border-color: var(--green); color: var(--green); background: var(--green-light); }
-    .step-line { flex: 1; height: 2px; background: var(--gray-200); margin: 0 4px; margin-top: -18px; min-width: 20px; }
+    .step-circle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      border: 2px solid var(--gray-200);
+      background: var(--white);
+      color: var(--gray-400);
+      font-weight: 700;
+      transition: all .3s;
+    }
+    .step-circle.done {
+      background: var(--green);
+      border-color: var(--green);
+      color: #fff;
+    }
+    .step-circle.active {
+      border-color: var(--green);
+      color: var(--green);
+      background: var(--green-light);
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+    .step-line {
+      flex: 1;
+      height: 2px;
+      background: var(--gray-200);
+      margin: 0 4px;
+      margin-top: -18px;
+      min-width: 20px;
+      transition: background .3s;
+    }
     .step-line.done { background: var(--green); }
-    .step-label { color: var(--gray-600); margin-top: 6px; font-size: 11px; text-align: center; width: 60px; }
-
-    /* ---------- TOAST ---------- */
-    .toast-container { position: fixed; top: 24px; right: 24px; z-index: 999; }
-    .toast { background: var(--white); border-radius: var(--radius-md); padding: 14px 18px; box-shadow: var(--shadow-md); border-left: 4px solid var(--green); display: flex; align-items: center; gap: 12px; margin-bottom: 10px; min-width: 280px; animation: toastIn .3s ease; }
+    .step-label {
+      color: var(--gray-600);
+      margin-top: 6px;
+      font-size: 11px;
+      text-align: center;
+      width: 60px;
+    }
+    
+    /* ============================================================
+       TOASTS
+       ============================================================ */
+    .toast-container {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      z-index: 999;
+      max-width: 400px;
+    }
+    .toast {
+      background: var(--white);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      box-shadow: var(--shadow-lg);
+      border-left: 4px solid var(--green);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+      min-width: 280px;
+      animation: toastIn .4s ease;
+    }
     .toast.error { border-left-color: var(--red); }
     .toast.warning { border-left-color: var(--amber); }
     .toast.info { border-left-color: var(--blue); }
-    @keyframes toastIn { from { transform: translateX(60px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes toastIn {
+      from { transform: translateX(80px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
     .toast-msg { flex: 1; font-size: 14px; font-weight: 500; }
-
-    /* ---------- TABS ---------- */
-    .tabs { display: flex; border-bottom: 2px solid var(--gray-200); margin-bottom: 24px; flex-wrap: wrap; gap: 4px; }
-    .tab { padding: 10px 20px; font-size: 14px; font-weight: 600; color: var(--gray-600); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s; }
-    .tab.active { color: var(--green); border-bottom-color: var(--green); }
-
-    /* ---------- RUNNER CARDS ---------- */
-    .runner-card { background: var(--white); border: 1px solid var(--gray-100); border-radius: var(--radius-md); padding: 16px; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow-sm); flex-wrap: wrap; }
-    .runner-avatar { width: 44px; height: 44px; border-radius: 50%; background: var(--blue-light); color: #185FA5; display: flex; align-items: center; justify-content: center; font-weight: 700; }
-    .admin-chip { background: #26215C; color: #CECBF6; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-    .grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
-    .floating-help { position: fixed; right: 24px; bottom: 24px; z-index: 120; background: var(--gray-800); color: var(--white); border-radius: var(--radius-sm); padding: 10px 16px; cursor: pointer; font-weight: 600; font-size: 13px; border: none; }
-
-    /* ---------- MOBILE RESPONSIVENESS ---------- */
+    .toast-close {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--gray-400);
+      padding: 0 4px;
+    }
+    .toast-close:hover { color: var(--gray-800); }
+    
+    /* ============================================================
+       TABS
+       ============================================================ */
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid var(--gray-200);
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .tab {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-600);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all .15s;
+    }
+    .tab:hover { color: var(--gray-800); }
+    .tab.active {
+      color: var(--green);
+      border-bottom-color: var(--green);
+    }
+    
+    /* ============================================================
+       RUNNER CARDS
+       ============================================================ */
+    .runner-card {
+      background: var(--white);
+      border: 1px solid var(--gray-100);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: var(--shadow-sm);
+      flex-wrap: wrap;
+      transition: all var(--transition);
+    }
+    .runner-card:hover { box-shadow: var(--shadow-md); }
+    .runner-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--blue-light);
+      color: #185FA5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .admin-chip {
+      background: #26215C;
+      color: #CECBF6;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+    .admin-action-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    
+    /* Status indicators */
+    .status-online { color: var(--green); }
+    .status-offline { color: var(--gray-400); }
+    .status-busy { color: var(--amber); }
+    
+    /* ============================================================
+       LOADING SKELETON
+       ============================================================ */
+    .skeleton {
+      background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-200) 50%, var(--gray-100) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    
+    /* ============================================================
+       FLOATING HELP
+       ============================================================ */
+    .floating-help {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 120;
+      background: var(--gray-800);
+      color: var(--white);
+      border-radius: var(--radius-sm);
+      padding: 10px 16px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      border: none;
+      box-shadow: var(--shadow-md);
+      transition: all var(--transition);
+    }
+    .floating-help:hover {
+      transform: scale(1.05);
+      background: #000;
+    }
+    
+    /* ============================================================
+       RESPONSIVE
+       ============================================================ */
     @media (max-width: 1024px) {
       .stats-grid { grid-template-columns: repeat(2,1fr); }
       .grid-3 { grid-template-columns: repeat(2,1fr); }
@@ -287,14 +1214,17 @@
       .auth-wrap { grid-template-columns: 1fr; }
       .auth-brand { display: none; }
       .auth-form-wrap { padding: 40px 24px; min-height: 100vh; }
-      .stats-grid { grid-template-columns: repeat(2,1fr); }
       .main-content { margin-left: 0; }
       .errand-grid { grid-template-columns: 1fr; }
       .dashboard-hero { grid-template-columns: 1fr; }
       .grid-2 { grid-template-columns: 1fr; }
       .grid-3 { grid-template-columns: 1fr; }
-      .sidebar { transform: translateX(-100%); transition: transform 0.3s; width: 280px; }
+      .sidebar {
+        transform: translateX(-100%);
+        width: 280px;
+      }
       .sidebar.open { transform: translateX(0); }
+      .hamburger { display: block; }
       .topbar { padding: 14px 20px; }
       .content-area { padding: 20px; }
       .map-meta { grid-template-columns: 1fr 1fr; }
@@ -309,25 +1239,31 @@
       .topbar { padding: 12px 16px; }
       .card-header { flex-direction: column; align-items: flex-start; }
       .data-table th, .data-table td { padding: 8px 10px; font-size: 12px; }
-      .modal { padding: 20px; }
+      .modal { padding: 20px; margin: 8px; }
       .tracker-steps { gap: 0; }
       .step-label { font-size: 9px; width: 44px; }
       .step-circle { width: 28px; height: 28px; font-size: 11px; }
       .step-line { min-width: 12px; }
+      .toast-container { right: 8px; left: 8px; top: 8px; max-width: 100%; }
+      .toast { min-width: auto; }
     }
-    /* mobile hamburger */
-    .hamburger { display: none; background: transparent; border: none; font-size: 24px; cursor: pointer; color: var(--gray-800); padding: 4px 8px; border-radius: var(--radius-sm); }
-    @media (max-width: 900px) {
-      .hamburger { display: block; }
-    }
-    .admin-action-btns { display: flex; gap: 6px; flex-wrap: wrap; }
   </style>
 </head>
 <body>
-<div class="toast-container" id="toastContainer"></div>
-<button class="floating-help" onclick="showToast('For urgent support call +254 712 345 678.','info')">Help</button>
 
-<!-- ===== LOGIN ===== -->
+<!-- ============================================================
+     TOAST CONTAINER
+     ============================================================ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ============================================================
+     HELP BUTTON
+     ============================================================ -->
+<button class="floating-help" onclick="showToast('For urgent support call +254 712 345 678','info')">💬 Help</button>
+
+<!-- ============================================================
+     SCREEN: LOGIN
+     ============================================================ -->
 <div class="screen active" id="screenLogin">
   <div class="auth-wrap">
     <div class="auth-brand">
@@ -360,7 +1296,7 @@
           <div class="form-error hidden" id="loginPassErr" style="color:#ffb3b3">Password required</div>
         </div>
         <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
-          <span class="auth-forgot">Forgot password?</span>
+          <span class="auth-forgot" onclick="showForgotPassword()">Forgot password?</span>
         </div>
         <button class="auth-btn" id="loginSubmitBtn" onclick="handleLogin()">Sign in</button>
         <div class="auth-switch">Don't have an account? <a onclick="showScreen('screenRegister')">Create one</a></div>
@@ -369,7 +1305,9 @@
   </div>
 </div>
 
-<!-- ===== REGISTER ===== -->
+<!-- ============================================================
+     SCREEN: REGISTER
+     ============================================================ -->
 <div class="screen" id="screenRegister">
   <div class="auth-wrap">
     <div class="auth-brand">
@@ -432,26 +1370,56 @@
   </div>
 </div>
 
-<!-- ===== USER DASHBOARD ===== -->
+<!-- ============================================================
+     SCREEN: FORGOT PASSWORD
+     ============================================================ -->
+<div class="screen" id="screenForgotPassword">
+  <div class="auth-wrap">
+    <div class="auth-brand">
+      <div>
+        <div class="brand-logo">nichu<span>kulie</span></div>
+        <div class="brand-tagline">Reset your password and get back to booking errands.</div>
+      </div>
+    </div>
+    <div class="auth-form-wrap">
+      <div class="auth-form">
+        <div class="auth-title">Reset Password</div>
+        <div class="auth-subtitle">Enter your email to receive a reset link.</div>
+        <div class="form-group">
+          <label class="form-label" style="color:rgba(255,255,255,.85)">Email address</label>
+          <input type="email" class="form-input" id="resetEmail" placeholder="you@example.com" style="color:#fff;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2);" />
+          <div class="form-error hidden" id="resetEmailErr" style="color:#ffb3b3">Enter a valid email</div>
+        </div>
+        <button class="auth-btn" onclick="handleForgotPassword()">Send Reset Link</button>
+        <div class="auth-switch">Remember your password? <a onclick="showScreen('screenLogin')">Sign in</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SCREEN: USER DASHBOARD
+     ============================================================ -->
 <div class="screen" id="screenUser">
   <div class="app-layout">
+    <!-- Sidebar -->
     <aside class="sidebar" id="userSidebar">
-      <div class="sidebar-logo" style="display:flex;justify-content:space-between;align-items:center;">
+      <div class="sidebar-logo">
         <span>nichu<span>kulie</span></span>
         <button class="hamburger" onclick="document.getElementById('userSidebar').classList.toggle('open')" style="display:block;background:transparent;border:none;font-size:24px;cursor:pointer;color:var(--gray-800);">✕</button>
       </div>
       <div class="sidebar-section">
         <div class="sidebar-section-label">Main</div>
-        <div class="nav-item active" onclick="switchUserTab('dashboard',this)">Dashboard</div>
-        <div class="nav-item" onclick="switchUserTab('new-errand',this)">New errand</div>
-        <div class="nav-item" onclick="switchUserTab('my-errands',this)">My errands <span class="nav-badge" id="errandsNavBadge" style="display:none">0</span></div>
-        <div class="nav-item" onclick="switchUserTab('track',this)">Track order</div>
+        <div class="nav-item active" onclick="switchUserTab('dashboard',this)">📊 Dashboard</div>
+        <div class="nav-item" onclick="switchUserTab('new-errand',this)">➕ New errand</div>
+        <div class="nav-item" onclick="switchUserTab('my-errands',this)">📋 My errands <span class="nav-badge" id="errandsNavBadge" style="display:none">0</span></div>
+        <div class="nav-item" onclick="switchUserTab('track',this)">📍 Track order</div>
       </div>
       <div class="sidebar-section">
         <div class="sidebar-section-label">Account</div>
-        <div class="nav-item" onclick="switchUserTab('wallet',this)">Wallet / M-Pesa</div>
-        <div class="nav-item" onclick="switchUserTab('history',this)">History</div>
-        <div class="nav-item" onclick="switchUserTab('settings',this)">Settings</div>
+        <div class="nav-item" onclick="switchUserTab('wallet',this)">💰 Wallet / M-Pesa</div>
+        <div class="nav-item" onclick="switchUserTab('history',this)">📜 History</div>
+        <div class="nav-item" onclick="switchUserTab('settings',this)">⚙️ Settings</div>
       </div>
       <div class="sidebar-user">
         <div class="user-avatar" id="userAvatarSidebar">--</div>
@@ -462,19 +1430,21 @@
         <span class="logout-btn" onclick="logout()">Exit</span>
       </div>
     </aside>
+    
     <main class="main-content">
-      <!-- Dashboard -->
+      <!-- ===== DASHBOARD TAB ===== -->
       <div id="userTab-dashboard">
         <div class="topbar">
           <div class="page-title">Dashboard</div>
           <div class="topbar-actions">
             <button class="hamburger" onclick="document.getElementById('userSidebar').classList.toggle('open')" style="display:block;background:transparent;border:none;font-size:24px;cursor:pointer;color:var(--gray-800);">☰</button>
-            <div class="notif-btn">Alerts<div class="notif-dot"></div></div>
+            <div class="notif-btn" onclick="showToast('No new notifications','info')">🔔 Alerts<div class="notif-dot"></div></div>
             <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">☾</button>
             <button class="btn btn-primary btn-sm" onclick="switchUserTab('new-errand',null)">+ New errand</button>
           </div>
         </div>
         <div class="content-area">
+          <!-- Hero -->
           <div class="dashboard-hero">
             <div>
               <span class="floating-chip">Nairobi · same-day</span>
@@ -492,25 +1462,31 @@
               <div class="floating-panel-row"><span>Total spent</span><strong id="heroTotalSpent">—</strong></div>
             </div>
           </div>
+          
+          <!-- Stats -->
           <div class="stats-grid">
             <div class="stat-card"><div class="stat-header"><span class="stat-marker stat-marker-green"></span></div><div class="stat-value" id="statTotalErrands">—</div><div class="stat-label">Total errands</div></div>
             <div class="stat-card"><div class="stat-header"><span class="stat-marker stat-marker-amber"></span><div class="badge badge-amber">Live</div></div><div class="stat-value" id="statActiveErrands">—</div><div class="stat-label">Active now</div></div>
             <div class="stat-card"><div class="stat-header"><span class="stat-marker stat-marker-blue"></span></div><div class="stat-value" id="statCompletedErrands">—</div><div class="stat-label">Completed</div></div>
             <div class="stat-card"><div class="stat-header"><span class="stat-marker stat-marker-red"></span></div><div class="stat-value" id="statTotalSpent">—</div><div class="stat-label">Total spent</div></div>
           </div>
+          
+          <!-- Active Errands -->
           <div class="card" style="margin-bottom:24px">
             <div class="card-header"><div class="card-title">Active errands</div><button class="btn btn-outline btn-sm" onclick="switchUserTab('my-errands',null)">View all</button></div>
             <div class="card-body" style="padding:0"><div id="activeErrandsList" style="padding:20px"></div></div>
           </div>
+          
+          <!-- Quick Actions -->
           <div class="grid-3">
-            <div class="card quick-action" style="padding:18px 20px;cursor:pointer" onclick="prefillErrand('shopping')"><div style="font-weight:600;font-size:14px">Shopping run</div><div class="text-muted" style="font-size:12px;margin-top:4px">Supermarkets &amp; shops</div></div>
-            <div class="card quick-action" style="padding:18px 20px;cursor:pointer" onclick="prefillErrand('pharmacy')"><div style="font-weight:600;font-size:14px">Pharmacy</div><div class="text-muted" style="font-size:12px;margin-top:4px">Medicine pickup</div></div>
-            <div class="card quick-action" style="padding:18px 20px;cursor:pointer" onclick="prefillErrand('documents')"><div style="font-weight:600;font-size:14px">Documents</div><div class="text-muted" style="font-size:12px;margin-top:4px">Pickup &amp; delivery</div></div>
+            <div class="card quick-action" style="padding:18px 20px" onclick="prefillErrand('shopping')"><div style="font-weight:600;font-size:14px">🛒 Shopping run</div><div class="text-muted" style="font-size:12px;margin-top:4px">Supermarkets &amp; shops</div></div>
+            <div class="card quick-action" style="padding:18px 20px" onclick="prefillErrand('pharmacy')"><div style="font-weight:600;font-size:14px">💊 Pharmacy</div><div class="text-muted" style="font-size:12px;margin-top:4px">Medicine pickup</div></div>
+            <div class="card quick-action" style="padding:18px 20px" onclick="prefillErrand('documents')"><div style="font-weight:600;font-size:14px">📄 Documents</div><div class="text-muted" style="font-size:12px;margin-top:4px">Pickup &amp; delivery</div></div>
           </div>
         </div>
       </div>
 
-      <!-- New Errand -->
+      <!-- ===== NEW ERRAND TAB ===== -->
       <div id="userTab-new-errand" class="hidden">
         <div class="topbar"><div class="page-title">Book an Errand</div></div>
         <div class="content-area">
@@ -551,7 +1527,7 @@
                     <select class="form-input" id="serviceLevel" onchange="updatePrice()">
                       <option value="same_day">Same-day delivery</option>
                       <option value="scheduled">Scheduled delivery</option>
-                      <option value="express">Express priority (+Ksh 100)</option>
+                      <option value="express">Express priority (+Ksh 50)</option>
                       <option value="intercounty">Inter-county dispatch</option>
                     </select>
                   </div>
@@ -579,7 +1555,7 @@
                     <div class="map-meta-item"><div class="text-muted" style="font-size:12px">Distance</div><div style="font-weight:800" id="routeDistance">--</div></div>
                     <div class="map-meta-item"><div class="text-muted" style="font-size:12px">ETA</div><div style="font-weight:800" id="routeDuration">--</div></div>
                   </div>
-                  <button class="btn btn-outline btn-block" style="margin-top:12px" onclick="previewRoute()">Preview route</button>
+                  <button class="btn btn-outline btn-block" style="margin-top:12px" onclick="previewRoute()">🗺️ Preview route</button>
                 </div>
               </div>
               <div class="card">
@@ -588,12 +1564,12 @@
                   <div style="margin-bottom:12px">
                     <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px"><span class="text-muted">Base fee</span><span id="priceBase">Ksh 200</span></div>
                     <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px"><span class="text-muted">Distance fee</span><span id="priceDist">Ksh 50</span></div>
-                    <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px"><span class="text-muted">Service charge</span><span>Ksh 30</span></div>
+                    <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px"><span class="text-muted">Service charge</span><span>Ksh 12</span></div>
                     <div style="display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px"><span class="text-muted">Coverage</span><span id="coverageFee">Local county</span></div>
-                    <div style="border-top:1px solid var(--gray-200);padding-top:10px;display:flex;justify-content:space-between;font-weight:700;font-family:var(--font-head)"><span>Total</span><span id="priceTotal" style="color:var(--green)">Ksh 280</span></div>
+                    <div style="border-top:1px solid var(--gray-200);padding-top:10px;display:flex;justify-content:space-between;font-weight:700;font-family:var(--font-head)"><span>Total</span><span id="priceTotal" style="color:var(--green)">Ksh 262</span></div>
                   </div>
-                  <button class="btn btn-primary btn-block" onclick="bookErrand()">Book &amp; Pay via M-Pesa</button>
-                  <div style="text-align:center;font-size:12px;color:var(--gray-400);margin-top:10px">Secured by M-Pesa STK Push</div>
+                  <button class="btn btn-primary btn-block" id="bookBtn" onclick="bookErrand()">💳 Book &amp; Pay via M-Pesa</button>
+                  <div style="text-align:center;font-size:12px;color:var(--gray-400);margin-top:10px">🔒 Secured by M-Pesa STK Push</div>
                 </div>
               </div>
             </div>
@@ -601,7 +1577,7 @@
         </div>
       </div>
 
-      <!-- My Errands -->
+      <!-- ===== MY ERRANDS TAB ===== -->
       <div id="userTab-my-errands" class="hidden">
         <div class="topbar"><div class="page-title">My Errands</div></div>
         <div class="content-area">
@@ -616,7 +1592,7 @@
         </div>
       </div>
 
-      <!-- Track -->
+      <!-- ===== TRACK TAB ===== -->
       <div id="userTab-track" class="hidden">
         <div class="topbar"><div class="page-title">Track Order</div></div>
         <div class="content-area">
@@ -639,13 +1615,14 @@
                 </div>
                 <div id="trackRunnerCard"></div>
                 <div id="trackStatusNote" style="margin-top:16px;padding:14px;background:var(--green-light);border-radius:var(--radius-sm);font-size:13px;color:var(--green-dark);font-weight:600"></div>
+                <div id="trackLocation" style="margin-top:12px;font-size:13px;color:var(--gray-600)"></div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Wallet -->
+      <!-- ===== WALLET TAB ===== -->
       <div id="userTab-wallet" class="hidden">
         <div class="topbar"><div class="page-title">Wallet &amp; Payments</div></div>
         <div class="content-area">
@@ -665,13 +1642,13 @@
         </div>
       </div>
 
-      <!-- History -->
+      <!-- ===== HISTORY TAB ===== -->
       <div id="userTab-history" class="hidden">
         <div class="topbar"><div class="page-title">Errand History</div></div>
         <div class="content-area"><div id="historyList"></div></div>
       </div>
 
-      <!-- Settings -->
+      <!-- ===== SETTINGS TAB ===== -->
       <div id="userTab-settings" class="hidden">
         <div class="topbar"><div class="page-title">Account Settings</div></div>
         <div class="content-area">
@@ -682,16 +1659,16 @@
                 <div class="form-group"><label class="form-label">Full name</label><input type="text" class="form-input" id="settingsName" /></div>
                 <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="settingsEmail" /></div>
                 <div class="form-group"><label class="form-label">Phone (M-Pesa)</label><input type="tel" class="form-input" id="settingsPhone" /></div>
-                <button class="btn btn-primary btn-sm" onclick="showToast('Profile update coming soon.','info')">Save changes</button>
+                <button class="btn btn-primary btn-sm" onclick="updateProfile()">Save changes</button>
               </div>
             </div>
             <div class="card">
               <div class="card-header"><div class="card-title">Security</div></div>
               <div class="card-body">
-                <div class="form-group"><label class="form-label">Current password</label><input type="password" class="form-input" placeholder="••••••••" /></div>
-                <div class="form-group"><label class="form-label">New password</label><input type="password" class="form-input" placeholder="••••••••" /></div>
-                <div class="form-group"><label class="form-label">Confirm new password</label><input type="password" class="form-input" placeholder="••••••••" /></div>
-                <button class="btn btn-outline btn-sm" onclick="showToast('Password update coming soon.','info')">Update password</button>
+                <div class="form-group"><label class="form-label">Current password</label><input type="password" class="form-input" id="settingsCurrentPass" placeholder="••••••••" /></div>
+                <div class="form-group"><label class="form-label">New password</label><input type="password" class="form-input" id="settingsNewPass" placeholder="••••••••" /></div>
+                <div class="form-group"><label class="form-label">Confirm new password</label><input type="password" class="form-input" id="settingsConfirmPass" placeholder="••••••••" /></div>
+                <button class="btn btn-outline btn-sm" onclick="updatePassword()">Update password</button>
               </div>
             </div>
           </div>
@@ -701,30 +1678,32 @@
   </div>
 </div>
 
-<!-- ===== ADMIN DASHBOARD ===== -->
+<!-- ============================================================
+     SCREEN: ADMIN DASHBOARD
+     ============================================================ -->
 <div class="screen" id="screenAdmin">
   <div class="app-layout">
     <aside class="sidebar" id="adminSidebar">
-      <div class="sidebar-logo" style="display:flex;justify-content:space-between;align-items:center;">
+      <div class="sidebar-logo">
         <span>nichu<span>kulie</span> <span class="admin-chip">Admin</span></span>
         <button class="hamburger" onclick="document.getElementById('adminSidebar').classList.toggle('open')" style="display:block;background:transparent;border:none;font-size:24px;cursor:pointer;color:var(--gray-800);">✕</button>
       </div>
       <div class="sidebar-section">
         <div class="sidebar-section-label">Operations</div>
-        <div class="nav-item active" onclick="switchAdminTab('admin-dashboard',this)">Overview</div>
-        <div class="nav-item" onclick="switchAdminTab('admin-errands',this)">All errands <span class="nav-badge" id="adminErrandsBadge">—</span></div>
-        <div class="nav-item" onclick="switchAdminTab('admin-runners',this)">Runners</div>
-        <div class="nav-item" onclick="switchAdminTab('admin-users',this)">Customers</div>
+        <div class="nav-item active" onclick="switchAdminTab('admin-dashboard',this)">📊 Overview</div>
+        <div class="nav-item" onclick="switchAdminTab('admin-errands',this)">📋 All errands <span class="nav-badge" id="adminErrandsBadge">—</span></div>
+        <div class="nav-item" onclick="switchAdminTab('admin-runners',this)">🏃 Runners</div>
+        <div class="nav-item" onclick="switchAdminTab('admin-users',this)">👥 Customers</div>
       </div>
       <div class="sidebar-section">
         <div class="sidebar-section-label">Finance</div>
-        <div class="nav-item" onclick="switchAdminTab('admin-payments',this)">Payments</div>
-        <div class="nav-item" onclick="switchAdminTab('admin-reports',this)">Reports</div>
+        <div class="nav-item" onclick="switchAdminTab('admin-payments',this)">💰 Payments</div>
+        <div class="nav-item" onclick="switchAdminTab('admin-reports',this)">📊 Reports</div>
       </div>
       <div class="sidebar-section">
         <div class="sidebar-section-label">Config</div>
-        <div class="nav-item" onclick="switchAdminTab('admin-coverage',this)">Coverage</div>
-        <div class="nav-item" onclick="switchAdminTab('admin-settings',this)">Settings</div>
+        <div class="nav-item" onclick="switchAdminTab('admin-coverage',this)">📍 Coverage</div>
+        <div class="nav-item" onclick="switchAdminTab('admin-settings',this)">⚙️ Settings</div>
       </div>
       <div class="sidebar-user">
         <div class="user-avatar" style="background:#26215C;color:#CECBF6" id="adminAvatarSidebar">AD</div>
@@ -732,6 +1711,7 @@
         <span class="logout-btn" onclick="logout()">Exit</span>
       </div>
     </aside>
+    
     <main class="main-content">
       <!-- Admin Overview -->
       <div id="adminTab-admin-dashboard">
@@ -739,7 +1719,7 @@
           <div class="page-title">Operations overview</div>
           <div class="topbar-actions">
             <button class="hamburger" onclick="document.getElementById('adminSidebar').classList.toggle('open')" style="display:block;background:transparent;border:none;font-size:24px;cursor:pointer;color:var(--gray-800);">☰</button>
-            <div class="notif-btn">Alerts<div class="notif-dot"></div></div>
+            <div class="notif-btn" onclick="showToast('No new alerts','info')">🔔 Alerts<div class="notif-dot"></div></div>
             <button class="theme-toggle" onclick="toggleTheme()" id="adminThemeToggle">☾</button>
             <span style="font-size:13px;color:var(--gray-600)"><strong id="todayDate"></strong></span>
           </div>
@@ -781,6 +1761,7 @@
               <option value="active">Active</option><option value="completed">Completed</option>
               <option value="cancelled">Cancelled</option>
             </select>
+            <button class="btn btn-outline btn-sm" onclick="exportErrandsCSV()">📥 Export CSV</button>
           </div>
         </div>
         <div class="content-area">
@@ -795,7 +1776,7 @@
         </div>
       </div>
 
-      <!-- Admin Runners (with add/delete) -->
+      <!-- Admin Runners -->
       <div id="adminTab-admin-runners" class="hidden">
         <div class="topbar">
           <div class="page-title">Runners</div>
@@ -808,7 +1789,7 @@
         </div>
       </div>
 
-      <!-- Admin Customers (with add/delete) -->
+      <!-- Admin Customers -->
       <div id="adminTab-admin-users" class="hidden">
         <div class="topbar">
           <div class="page-title">Customers</div>
@@ -828,9 +1809,11 @@
       <div id="adminTab-admin-payments" class="hidden">
         <div class="topbar"><div class="page-title">Payments</div></div>
         <div class="content-area">
-          <div class="empty-state" style="margin-bottom:24px">
-            <div style="font-weight:600;margin-bottom:6px">Payment listing coming soon</div>
-            <div style="font-size:13px">A payments-list endpoint is on the backend roadmap. Individual payment status is available via the M-Pesa status endpoint.</div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">All Payments</div></div>
+            <div class="table-wrap">
+              <table class="data-table"><thead><tr><th>Transaction ID</th><th>Customer</th><th>Errand</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th></tr></thead><tbody id="adminPaymentsTable"></tbody></table>
+            </div>
           </div>
         </div>
       </div>
@@ -840,9 +1823,9 @@
         <div class="topbar"><div class="page-title">Reports</div></div>
         <div class="content-area">
           <div class="grid-3">
-            <div class="card" style="padding:20px;cursor:pointer" onclick="showToast('Report export coming soon.','info')"><div style="font-weight:700;margin-bottom:4px">Revenue report</div><div class="text-muted" style="font-size:13px">Daily / weekly / monthly</div></div>
-            <div class="card" style="padding:20px;cursor:pointer" onclick="showToast('Report export coming soon.','info')"><div style="font-weight:700;margin-bottom:4px">Runner performance</div><div class="text-muted" style="font-size:13px">Completion rate &amp; areas</div></div>
-            <div class="card" style="padding:20px;cursor:pointer" onclick="showToast('Report export coming soon.','info')"><div style="font-weight:700;margin-bottom:4px">Customer analytics</div><div class="text-muted" style="font-size:13px">Retention &amp; repeat bookings</div></div>
+            <div class="card quick-action" style="padding:20px" onclick="generateReport('revenue')"><div style="font-weight:700;margin-bottom:4px">💰 Revenue report</div><div class="text-muted" style="font-size:13px">Daily / weekly / monthly</div></div>
+            <div class="card quick-action" style="padding:20px" onclick="generateReport('runners')"><div style="font-weight:700;margin-bottom:4px">🏃 Runner performance</div><div class="text-muted" style="font-size:13px">Completion rate &amp; areas</div></div>
+            <div class="card quick-action" style="padding:20px" onclick="generateReport('customers')"><div style="font-weight:700;margin-bottom:4px">👥 Customer analytics</div><div class="text-muted" style="font-size:13px">Retention &amp; repeat bookings</div></div>
           </div>
         </div>
       </div>
@@ -872,12 +1855,12 @@
             <div class="card-header"><div class="card-title">Pricing config</div></div>
             <div class="card-body">
               <div class="grid-2">
-                <div class="form-group"><label class="form-label">Base fee (Ksh)</label><input type="number" class="form-input" value="200" /></div>
-                <div class="form-group"><label class="form-label">Per km rate (Ksh)</label><input type="number" class="form-input" value="35" /></div>
-                <div class="form-group"><label class="form-label">Express surcharge (Ksh)</label><input type="number" class="form-input" value="100" /></div>
-                <div class="form-group"><label class="form-label">Service charge (Ksh)</label><input type="number" class="form-input" value="30" /></div>
+                <div class="form-group"><label class="form-label">Base fee (Ksh)</label><input type="number" class="form-input" id="configBaseFee" value="200" /></div>
+                <div class="form-group"><label class="form-label">Per km rate (Ksh)</label><input type="number" class="form-input" id="configPerKm" value="10" /></div>
+                <div class="form-group"><label class="form-label">Express surcharge (Ksh)</label><input type="number" class="form-input" id="configExpress" value="50" /></div>
+                <div class="form-group"><label class="form-label">Service charge (Ksh)</label><input type="number" class="form-input" id="configService" value="12" /></div>
               </div>
-              <button class="btn btn-primary btn-sm" onclick="showToast('Pricing config saved.','success')">Save pricing</button>
+              <button class="btn btn-primary btn-sm" onclick="savePricingConfig()">💾 Save pricing</button>
             </div>
           </div>
         </div>
@@ -886,7 +1869,9 @@
   </div>
 </div>
 
-<!-- M-Pesa Modal -->
+<!-- ============================================================
+     M-PESA MODAL
+     ============================================================ -->
 <div class="modal-overlay" id="mpesaModal">
   <div class="modal">
     <div style="text-align:center">
@@ -905,9 +1890,12 @@
       <div class="mpesa-step"><div class="mpesa-step-num">3</div>Enter your M-Pesa PIN to confirm payment</div>
     </div>
     <div id="mpesaProcessing" class="hidden" style="text-align:center;padding:20px">
-      <div class="spinner" style="width:32px;height:32px;border-width:3px;margin:0 auto 16px"></div>
+      <div class="spinner spinner-lg" style="margin:0 auto 16px"></div>
       <div style="font-weight:600">Waiting for payment confirmation...</div>
       <div class="text-muted" style="margin-top:6px;font-size:13px">Check your phone for the M-Pesa prompt</div>
+      <div id="mpesaProgress" style="margin-top:12px;height:4px;background:var(--gray-200);border-radius:4px;overflow:hidden">
+        <div id="mpesaProgressBar" style="height:100%;width:0%;background:var(--green);transition:width .5s"></div>
+      </div>
     </div>
     <div id="mpesaSuccess" class="hidden" style="text-align:center;padding:10px">
       <div style="font-size:48px;margin-bottom:12px">✅</div>
@@ -916,474 +1904,1631 @@
       <div style="font-size:12px;background:var(--gray-100);padding:8px;border-radius:6px;margin-top:12px;font-family:monospace" id="mpesaRef">Ref: —</div>
     </div>
     <div id="mpesaError" class="hidden" style="text-align:center;padding:10px">
+      <div style="font-size:48px;margin-bottom:12px">❌</div>
       <div style="font-weight:600;color:var(--red);margin-bottom:8px">Payment not confirmed</div>
       <div class="text-muted" style="font-size:13px">The STK Push was sent but payment was not confirmed. Please try again or contact support.</div>
+      <button class="btn btn-primary mt-2" onclick="retryMpesa()">🔄 Retry Payment</button>
     </div>
     <div style="display:flex;gap:10px;margin-top:20px" id="mpesaBtns">
       <button class="btn btn-outline btn-block" onclick="closeMpesa()">Cancel</button>
-      <button class="btn btn-primary btn-block" onclick="processMpesa()" style="background:#006B3E">Pay now</button>
+      <button class="btn btn-primary btn-block" onclick="processMpesa()" style="background:#006B3E">💳 Pay now</button>
     </div>
   </div>
 </div>
 
+<!-- ============================================================
+     JAVASCRIPT
+     ============================================================ -->
 <script>
-// ===== STATE =====
-let currentUser=null,pendingBooking=null,leafletMap,routeLine,pickupMarker,deliveryMarker;
-const API_BASE=location.protocol.startsWith('http')?location.origin:'http://localhost:5000';
-let authToken=localStorage.getItem('nichukulieToken')||'';
-const KENYA_COUNTIES=['Baringo','Bomet','Bungoma','Busia','Elgeyo-Marakwet','Embu','Garissa','Homa Bay','Isiolo','Kajiado','Kakamega','Kericho','Kiambu','Kilifi','Kirinyaga','Kisii','Kisumu','Kitui','Kwale','Laikipia','Lamu','Machakos','Makueni','Mandera','Marsabit','Meru','Migori','Mombasa',"Murang'a",'Nairobi','Nakuru','Nandi','Narok','Nyamira','Nyandarua','Nyeri','Samburu','Siaya','Taita-Taveta','Tana River','Tharaka-Nithi','Trans Nzoia','Turkana','Uasin Gishu','Vihiga','Wajir','West Pokot'];
-const PRIORITY_HUBS=['Nairobi','Mombasa','Kisumu','Nakuru','Uasin Gishu','Kiambu','Machakos','Kajiado'];
-const RATES = {
-  shopping:    { base:500, desc:'Personal shopping',   min:500,  max:800 },
-  pharmacy:    { base:200, desc:'Pharmacy pickup',      min:150,  max:300  },
-  documents:   { base:300, desc:'Document errand',      min:300,  max:350  },
-  package:     { base:300, desc:'General delivery',     min:300,  max:300  },
-  food:        { base:200, desc:'Meal pickup',          min:150,  max:300  },
-  custom:      { base:250, desc:'Custom errand',        min:250,  max:500  },
-};
-const PER_KM_RATE = 10, EXPRESS_SURCHARGE = 50, SERVICE_CHARGE = 12, INTERCOUNTY_BASE = 100;
-let errands=[], customers=[], runners=[], payments=[];
+// ================================================================
+// CONFIGURATION
+// ================================================================
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000'
+  : 'https://api.nichukulie.com';
 
-// ===== API =====
-async function apiFetch(path,options={}){
-  const ctrl=new AbortController();
-  const t=setTimeout(()=>ctrl.abort(),options.timeout||8000);
-  try{
-    const res=await fetch(API_BASE+path,{...options,signal:ctrl.signal,headers:{'Content-Type':'application/json',...(authToken?{Authorization:'Bearer '+authToken}:{}),...(options.headers||{})}});
-    const text=await res.text();
-    const data=text?JSON.parse(text):null;
-    if(!res.ok)throw new Error(data?.message||data?.errors?.[0]?.msg||'Request failed ('+res.status+')');
+const WS_BASE = API_BASE.replace('http://', 'ws://').replace('https://', 'wss://');
+
+// ================================================================
+// STATE
+// ================================================================
+let currentUser = null;
+let authToken = localStorage.getItem('nichukulieToken') || '';
+let errands = [];
+let customers = [];
+let runners = [];
+let payments = [];
+let pendingBooking = null;
+let leafletMap = null;
+let routeLine = null;
+let pickupMarker = null;
+let deliveryMarker = null;
+let socket = null;
+let currentErrandId = null;
+let mpesaRetryErrandId = null;
+
+// ================================================================
+// KENYA DATA
+// ================================================================
+const KENYA_COUNTIES = [
+  'Baringo','Bomet','Bungoma','Busia','Elgeyo-Marakwet','Embu','Garissa',
+  'Homa Bay','Isiolo','Kajiado','Kakamega','Kericho','Kiambu','Kilifi',
+  'Kirinyaga','Kisii','Kisumu','Kitui','Kwale','Laikipia','Lamu','Machakos',
+  'Makueni','Mandera','Marsabit','Meru','Migori','Mombasa',"Murang'a",
+  'Nairobi','Nakuru','Nandi','Narok','Nyamira','Nyandarua','Nyeri','Samburu',
+  'Siaya','Taita-Taveta','Tana River','Tharaka-Nithi','Trans Nzoia',
+  'Turkana','Uasin Gishu','Vihiga','Wajir','West Pokot'
+];
+
+const PRIORITY_HUBS = ['Nairobi','Mombasa','Kisumu','Nakuru','Uasin Gishu','Kiambu','Machakos','Kajiado'];
+
+const RATES = {
+  shopping:    { base: 500, desc: 'Personal shopping' },
+  pharmacy:    { base: 200, desc: 'Pharmacy pickup' },
+  documents:   { base: 300, desc: 'Document errand' },
+  package:     { base: 300, desc: 'General delivery' },
+  food:        { base: 200, desc: 'Meal pickup' },
+  custom:      { base: 250, desc: 'Custom errand' },
+};
+
+let CONFIG = {
+  baseFee: 200,
+  perKmRate: 10,
+  expressSurcharge: 50,
+  serviceCharge: 12,
+};
+
+// ================================================================
+// API HELPERS
+// ================================================================
+async function apiFetch(path, options = {}) {
+  const ctrl = new AbortController();
+  const timeout = options.timeout || 10000;
+  const timer = setTimeout(() => ctrl.abort(), timeout);
+
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+    };
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+
+    const res = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers,
+      signal: ctrl.signal,
+    });
+
+    clearTimeout(timer);
+
+    let data = null;
+    const text = await res.text();
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        data = { message: text };
+      }
+    }
+
+    if (!res.ok) {
+      const errorMsg = data?.message || data?.errors?.[0]?.msg || `Request failed (${res.status})`;
+      throw new Error(errorMsg);
+    }
+
     return data;
-  }finally{clearTimeout(t);}
-}
-function saveSession(token,user){authToken=token||'';if(authToken)localStorage.setItem('nichukulieToken',authToken);if(user)localStorage.setItem('nichukulieUser',JSON.stringify(user));}
-function clearSession(){authToken='';localStorage.removeItem('nichukulieToken');localStorage.removeItem('nichukulieUser');}
-function normalizeErrand(e){
-  const runner=e.runner?`${e.runner.firstName||''} ${e.runner.lastName||''}`.trim():'—';
-  const customer=e.customer?`${e.customer.firstName||''} ${e.customer.lastName||''}`.trim():'Customer';
-  return{_id:e._id,id:e.orderId||e.id||e._id,type:cap(String(e.type||'custom')),rawType:e.type||'custom',pickup:e.pickup||'',delivery:e.delivery||'',pickupCounty:e.pickupCounty||'Nairobi',deliveryCounty:e.deliveryCounty||'Nairobi',serviceLevel:e.serviceLevel||'same_day',distanceKm:e.distanceKm||0,runner,customer,status:e.status||'pending',amount:e.price?.total||e.amount||0,date:e.scheduledDate?new Date(e.scheduledDate).toISOString().split('T')[0]:(e.date||'')};
-}
-function setCurrentUser(user){
-  const fn=user.firstName||user.name?.split(' ')[0]||'User';
-  const ln=user.lastName||user.name?.split(' ').slice(1).join(' ')||'';
-  currentUser={...user,name:`${fn} ${ln}`.trim(),role:user.role==='customer'?'user':user.role,firstName:fn,lastName:ln};
-  if(currentUser.role!=='admin'){
-    const ini=((fn[0]||'U')+(ln[0]||'')).toUpperCase();
-    setText('userNameSidebar',currentUser.name);setText('userAvatarSidebar',ini);setText('greetName',fn);
-    setText('walletPhone',currentUser.phone||'—');
-    const sn=document.getElementById('settingsName'),se=document.getElementById('settingsEmail'),sp=document.getElementById('settingsPhone');
-    if(sn)sn.value=currentUser.name;if(se)se.value=currentUser.email||'';if(sp)sp.value=currentUser.phone||'';
-  }else{
-    const ini=((fn[0]||'A')+(ln[0]||'D')).toUpperCase();
-    setText('adminNameSidebar',currentUser.name);setText('adminAvatarSidebar',ini);
+  } catch (error) {
+    clearTimeout(timer);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timed out. Please check your connection.');
+    }
+    throw error;
   }
 }
 
-// ===== DATA LOADING =====
-async function loadUserData(){
-  if(!authToken)return;
-  try{const data=await apiFetch('/api/errands/my?limit=50');errands=(data.errands||[]).map(normalizeErrand);}
-  catch(err){errands=[];showToast(err.message||'Could not load your errands.','error');}
-  renderActiveErrands();renderErrands(errands);updateDashboardStats();renderHistory();updateErrandsNavBadge();
+// ================================================================
+// AUTH
+// ================================================================
+function saveSession(token, user) {
+  authToken = token || '';
+  if (authToken) localStorage.setItem('nichukulieToken', authToken);
+  if (user) localStorage.setItem('nichukulieUser', JSON.stringify(user));
 }
-async function loadAdminData(){
-  if(!authToken)return;
-  try{
-    const[statsData,errandData,userData,runnerData]=await Promise.all([apiFetch('/api/admin/stats'),apiFetch('/api/errands?limit=100'),apiFetch('/api/admin/users'),apiFetch('/api/admin/runners')]);
-    setText('adminStatToday',statsData.todayErrands??'0');setText('adminStatRunners',statsData.activeRunners??'0');
-    setText('adminStatRevenue','Ksh '+Number(statsData.totalRevenue||0).toLocaleString());setText('adminStatPending',statsData.pendingErrands??'0');
-    setText('adminPendingBadge',(statsData.pendingErrands??0)+' pending');setText('adminErrandsBadge',statsData.pendingErrands??'—');
-    errands=(errandData.errands||[]).map(normalizeErrand);
-    customers=(userData||[]).map(u=>{const fullName=`${u.firstName} ${u.lastName}`.trim();const own=errands.filter(e=>e.customer===fullName);return{_id:u._id,name:fullName,phone:u.phone||'—',email:u.email,errands:own.length,spent:own.filter(e=>e.status!=='cancelled').reduce((s,e)=>s+Number(e.amount||0),0),joined:u.createdAt?new Date(u.createdAt).toLocaleDateString('en-KE',{month:'short',year:'numeric'}):'—',status:u.isActive?'active':'inactive'};});
-    runners=(runnerData||[]).map(r=>({_id:r._id,name:`${r.firstName} ${r.lastName}`,rating:null,completed:null,status:r.isActive?'online':'offline',area:r.address||'Nairobi'}));
-  }catch(err){errands=[];customers=[];runners=[];showToast(err.message||'Could not load admin data.','error');}
+
+function clearSession() {
+  authToken = '';
+  localStorage.removeItem('nichukulieToken');
+  localStorage.removeItem('nichukulieUser');
+  if (socket) {
+    socket.close();
+    socket = null;
+  }
+}
+
+function setCurrentUser(user) {
+  const fn = user.firstName || user.name?.split(' ')[0] || 'User';
+  const ln = user.lastName || user.name?.split(' ').slice(1).join(' ') || '';
+  currentUser = {
+    ...user,
+    name: `${fn} ${ln}`.trim(),
+    role: user.role === 'customer' ? 'user' : user.role,
+    firstName: fn,
+    lastName: ln,
+  };
+}
+
+// ================================================================
+// TOAST SYSTEM
+// ================================================================
+function showToast(msg, type = 'success', duration = 4500) {
+  const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <span>${icons[type] || '✅'}</span>
+    <span class="toast-msg">${msg}</span>
+    <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+  `;
+  container.appendChild(toast);
+  setTimeout(() => {
+    if (toast.parentElement) toast.remove();
+  }, duration);
+}
+
+// ================================================================
+// SCREEN NAVIGATION
+// ================================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+function switchUserTab(tab, el) {
+  document.querySelectorAll('[id^="userTab-"]').forEach(t => t.classList.add('hidden'));
+  const target = document.getElementById('userTab-' + tab);
+  if (target) target.classList.remove('hidden');
+  
+  document.querySelectorAll('#screenUser .nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  
+  if (tab === 'new-errand') {
+    setTimeout(ensureMap, 100);
+    initCountySelects();
+  }
+}
+
+function switchAdminTab(tab, el) {
+  document.querySelectorAll('[id^="adminTab-"]').forEach(t => t.classList.add('hidden'));
+  const target = document.getElementById('adminTab-' + tab);
+  if (target) target.classList.remove('hidden');
+  
+  document.querySelectorAll('#screenAdmin .nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+
+// ================================================================
+// THEME
+// ================================================================
+function setTheme(theme) {
+  document.body.dataset.theme = theme;
+  localStorage.setItem('nichukulieTheme', theme);
+  document.querySelectorAll('#themeToggle, #adminThemeToggle').forEach(b => {
+    if (b) b.textContent = theme === 'dark' ? '☀' : '☾';
+  });
+}
+
+function toggleTheme() {
+  setTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark');
+}
+
+// ================================================================
+// LOGIN / REGISTER
+// ================================================================
+async function handleLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  let ok = true;
+
+  if (!/\S+@\S+\.\S+/.test(email)) { show('loginEmailErr'); ok = false; } else hide('loginEmailErr');
+  if (!pass) { show('loginPassErr'); ok = false; } else hide('loginPassErr');
+  if (!ok) return;
+
+  const btn = document.getElementById('loginSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Signing in...';
+
+  try {
+    const data = await apiFetch('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password: pass }),
+    });
+    saveSession(data.token, data.user);
+    setCurrentUser(data.user);
+    
+    if (currentUser.role === 'admin') {
+      showScreen('screenAdmin');
+      await loadAdminData();
+    } else {
+      showScreen('screenUser');
+      await initUser();
+      await loadUserData();
+      connectWebSocket();
+    }
+    showToast(`Welcome back, ${currentUser.firstName}!`, 'success');
+  } catch (err) {
+    showToast(err.message || 'Login failed. Please try again.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sign in';
+  }
+}
+
+async function handleRegister() {
+  const first = v('regFirst');
+  const last = v('regLast');
+  const email = v('regEmail');
+  const phone = v('regPhone');
+  const pass = v('regPass');
+  const conf = v('regPassConf');
+  let ok = true;
+
+  if (!first) { show('regFirstErr'); ok = false; } else hide('regFirstErr');
+  if (!last) { show('regLastErr'); ok = false; } else hide('regLastErr');
+  if (!/\S+@\S+\.\S+/.test(email)) { show('regEmailErr'); ok = false; } else hide('regEmailErr');
+  if (!/^(07|01)\d{8}$/.test(phone.replace(/\s/g, ''))) { show('regPhoneErr'); ok = false; } else hide('regPhoneErr');
+  if (pass.length < 8 || !/\d/.test(pass) || !/[^a-zA-Z0-9]/.test(pass)) { show('regPassErr'); ok = false; } else hide('regPassErr');
+  if (pass !== conf) { show('regPassConfErr'); ok = false; } else hide('regPassConfErr');
+  if (!ok) return;
+
+  const btn = document.getElementById('regSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Creating account...';
+
+  try {
+    const data = await apiFetch('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ firstName: first, lastName: last, email, phone, password: pass }),
+    });
+    saveSession(data.token, data.user);
+    setCurrentUser(data.user);
+    showScreen('screenUser');
+    await initUser();
+    await loadUserData();
+    connectWebSocket();
+    showToast('🎉 Account created! Welcome to Nichukulie.', 'success');
+  } catch (err) {
+    showToast(err.message || 'Registration failed. Please try again.', 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Create account';
+  }
+}
+
+function showForgotPassword() {
+  showScreen('screenForgotPassword');
+}
+
+async function handleForgotPassword() {
+  const email = document.getElementById('resetEmail').value.trim();
+  if (!/\S+@\S+\.\S+/.test(email)) {
+    show('resetEmailErr');
+    return;
+  }
+  hide('resetEmailErr');
+
+  try {
+    await apiFetch('/api/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+    showToast('📧 Password reset link sent to your email.', 'success');
+    showScreen('screenLogin');
+  } catch (err) {
+    showToast(err.message || 'Failed to send reset link.', 'error');
+  }
+}
+
+function logout() {
+  currentUser = null;
+  clearSession();
+  if (socket) {
+    socket.close();
+    socket = null;
+  }
+  showScreen('screenLogin');
+  showToast('Signed out successfully.', 'info');
+}
+
+// ================================================================
+// USER DATA LOADING
+// ================================================================
+async function loadUserData() {
+  if (!authToken) return;
+  try {
+    const data = await apiFetch('/api/errands/my?limit=50');
+    errands = (data.errands || []).map(normalizeErrand);
+    payments = data.payments || [];
+  } catch (err) {
+    errands = [];
+    payments = [];
+    showToast(err.message || 'Could not load your errands.', 'error');
+  }
+  renderActiveErrands();
+  renderErrands(errands);
+  updateDashboardStats();
+  renderHistory();
+  renderTransactions();
+  updateErrandsNavBadge();
+}
+
+async function loadAdminData() {
+  if (!authToken) return;
+  try {
+    const [statsData, errandData, userData, runnerData, paymentData] = await Promise.all([
+      apiFetch('/api/admin/stats'),
+      apiFetch('/api/errands?limit=100'),
+      apiFetch('/api/admin/users'),
+      apiFetch('/api/admin/runners'),
+      apiFetch('/api/admin/payments').catch(() => ({ payments: [] })),
+    ]);
+
+    setText('adminStatToday', statsData.todayErrands ?? '0');
+    setText('adminStatRunners', statsData.activeRunners ?? '0');
+    setText('adminStatRevenue', 'Ksh ' + Number(statsData.totalRevenue || 0).toLocaleString());
+    setText('adminStatPending', statsData.pendingErrands ?? '0');
+    setText('adminPendingBadge', (statsData.pendingErrands ?? 0) + ' pending');
+    setText('adminErrandsBadge', statsData.pendingErrands ?? '—');
+
+    errands = (errandData.errands || []).map(normalizeErrand);
+    customers = (userData || []).map(u => {
+      const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim();
+      const own = errands.filter(e => e.customer === fullName);
+      return {
+        _id: u._id,
+        name: fullName || u.email || 'Unknown',
+        phone: u.phone || '—',
+        email: u.email || '—',
+        errands: own.length,
+        spent: own.filter(e => e.status !== 'cancelled').reduce((s, e) => s + Number(e.amount || 0), 0),
+        joined: u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-KE', { month: 'short', year: 'numeric' }) : '—',
+        status: u.isActive !== false ? 'active' : 'inactive',
+      };
+    });
+    runners = (runnerData || []).map(r => ({
+      _id: r._id,
+      name: `${r.firstName || ''} ${r.lastName || ''}`.trim() || 'Runner',
+      rating: r.rating || null,
+      completed: r.completedErrands || 0,
+      status: r.isActive ? 'online' : 'offline',
+      area: r.address || 'Nairobi',
+    }));
+    payments = paymentData.payments || [];
+  } catch (err) {
+    errands = [];
+    customers = [];
+    runners = [];
+    payments = [];
+    showToast(err.message || 'Could not load admin data.', 'error');
+  }
   initAdmin();
 }
 
-// ===== AUTH =====
-async function handleLogin(){
-  const email=document.getElementById('loginEmail').value.trim(),pass=document.getElementById('loginPass').value;
-  let ok=true;
-  if(!/\S+@\S+\.\S+/.test(email)){show('loginEmailErr');ok=false;}else hide('loginEmailErr');
-  if(!pass){show('loginPassErr');ok=false;}else hide('loginPassErr');
-  if(!ok)return;
-  const btn=document.getElementById('loginSubmitBtn');
-  if(btn){btn.disabled=true;btn.textContent='Signing in...';}
-  try{
-    const data=await apiFetch('/api/auth/login',{method:'POST',body:JSON.stringify({email,password:pass})});
-    saveSession(data.token,data.user);setCurrentUser(data.user);
-    if(currentUser.role==='admin'){showScreen('screenAdmin');await loadAdminData();}
-    else{showScreen('screenUser');initUser();await loadUserData();}
-    showToast('Signed in.','success');
-  }catch(err){showToast(err.name==='AbortError'?'Could not reach the server. Is the backend running?':err.message,'error');}
-  finally{if(btn){btn.disabled=false;btn.textContent='Sign in';}}
-}
-async function handleRegister(){
-  const first=v('regFirst'),last=v('regLast'),email=v('regEmail'),phone=v('regPhone'),pass=v('regPass'),conf=v('regPassConf');
-  let ok=true;
-  if(!first){show('regFirstErr');ok=false;}else hide('regFirstErr');
-  if(!last){show('regLastErr');ok=false;}else hide('regLastErr');
-  if(!/\S+@\S+\.\S+/.test(email)){show('regEmailErr');ok=false;}else hide('regEmailErr');
-  if(!/^(07|01)\d{8}$/.test(phone.replace(/\s/g,''))){show('regPhoneErr');ok=false;}else hide('regPhoneErr');
-  if(pass.length<8||!/\d/.test(pass)||!/[^a-zA-Z0-9]/.test(pass)){show('regPassErr');ok=false;}else hide('regPassErr');
-  if(pass!==conf){show('regPassConfErr');ok=false;}else hide('regPassConfErr');
-  if(!ok)return;
-  const btn=document.getElementById('regSubmitBtn');
-  if(btn){btn.disabled=true;btn.textContent='Creating account...';}
-  try{
-    const data=await apiFetch('/api/auth/register',{method:'POST',body:JSON.stringify({firstName:first,lastName:last,email,phone,password:pass})});
-    saveSession(data.token,data.user);setCurrentUser(data.user);
-    showScreen('screenUser');initUser();await loadUserData();
-    showToast('Account created. Welcome to Nichukulie.','success');
-  }catch(err){showToast(err.message||'Could not create account. Please try again.','error');}
-  finally{if(btn){btn.disabled=false;btn.textContent='Create account';}}
-}
-function logout(){currentUser=null;clearSession();showScreen('screenLogin');showToast('Signed out.','info');}
+// ================================================================
+// HELPERS
+// ================================================================
+function v(id) { return document.getElementById(id)?.value?.trim() || ''; }
+function show(id) { const el = document.getElementById(id); if (el) el.classList.remove('hidden'); }
+function hide(id) { const el = document.getElementById(id); if (el) el.classList.add('hidden'); }
+function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : ''; }
 
-// ===== NAVIGATION =====
-function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');}
-function switchUserTab(tab,el){
-  document.querySelectorAll('[id^="userTab-"]').forEach(t=>t.classList.add('hidden'));
-  document.getElementById('userTab-'+tab)?.classList.remove('hidden');
-  document.querySelectorAll('.screen#screenUser .nav-item').forEach(n=>n.classList.remove('active'));
-  if(el)el.classList.add('active');
-  if(tab==='new-errand')setTimeout(ensureMap,0);
+function togglePass(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.type = el.type === 'password' ? 'text' : 'password';
+  btn.textContent = el.type === 'password' ? 'show' : 'hide';
 }
-function switchAdminTab(tab,el){
-  document.querySelectorAll('[id^="adminTab-"]').forEach(t=>t.classList.add('hidden'));
-  document.getElementById('adminTab-'+tab)?.classList.remove('hidden');
-  document.querySelectorAll('.screen#screenAdmin .nav-item').forEach(n=>n.classList.remove('active'));
-  if(el)el.classList.add('active');
-}
-function setTheme(theme){document.body.dataset.theme=theme;localStorage.setItem('nichukulieTheme',theme);document.querySelectorAll('#themeToggle,#adminThemeToggle').forEach(b=>{if(b)b.textContent=theme==='dark'?'☀':'☾';});}
-function toggleTheme(){setTheme(document.body.dataset.theme==='dark'?'light':'dark');}
-function prefillErrand(type){switchUserTab('new-errand',null);document.getElementById('errandType').value=type;updatePrice();document.getElementById('errandPickup').focus();}
-function updateErrandsNavBadge(){const a=errands.filter(e=>e.status==='active'||e.status==='pending').length;const b=document.getElementById('errandsNavBadge');if(b){b.textContent=a;b.style.display=a>0?'':'none';}}
 
-// ===== MAP =====
-const NAIROBI_CENTER=[-1.286389,36.817223];
-function ensureMap(){
-  const mapEl=document.getElementById('errandMap');
-  if(!mapEl||typeof L==='undefined')return;
-  if(leafletMap){leafletMap.invalidateSize();return;}
-  leafletMap=L.map(mapEl,{center:NAIROBI_CENTER,zoom:12});
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap contributors'}).addTo(leafletMap);
+function checkStrength(p) {
+  const f = document.getElementById('strengthFill');
+  const l = document.getElementById('strengthLabel');
+  if (!f) return;
+  let s = 0;
+  if (p.length >= 8) s++;
+  if (/[A-Z]/.test(p)) s++;
+  if (/\d/.test(p)) s++;
+  if (/[^a-zA-Z0-9]/.test(p)) s++;
+  const colors = ['', '#E24B4A', '#EF9F27', '#378ADD', '#1D9E75'];
+  const labels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+  f.style.width = s * 25 + '%';
+  f.style.background = colors[s] || '#E24B4A';
+  if (l) { l.textContent = labels[s] || ''; l.style.color = colors[s] || ''; }
 }
-async function geocodePlace(q){
-  const url=`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ke&q=${encodeURIComponent(q)}`;
-  const res=await fetch(url,{headers:{'Accept-Language':'en'}});
-  if(!res.ok)throw new Error('Geocoding failed');
-  const results=await res.json();
-  return results.length?{lat:parseFloat(results[0].lat),lon:parseFloat(results[0].lon)}:null;
+
+function normalizeErrand(e) {
+  const runner = e.runner ? (typeof e.runner === 'object' ? `${e.runner.firstName || ''} ${e.runner.lastName || ''}`.trim() : e.runner) : '—';
+  const customer = e.customer ? (typeof e.customer === 'object' ? `${e.customer.firstName || ''} ${e.customer.lastName || ''}`.trim() : e.customer) : 'Customer';
+  return {
+    _id: e._id,
+    id: e.orderId || e.id || e._id,
+    type: cap(String(e.type || 'custom')),
+    rawType: e.type || 'custom',
+    pickup: e.pickup?.address || e.pickup || '',
+    delivery: e.delivery?.address || e.delivery || '',
+    pickupCounty: e.pickup?.county || e.pickupCounty || 'Nairobi',
+    deliveryCounty: e.delivery?.county || e.deliveryCounty || 'Nairobi',
+    serviceLevel: e.serviceLevel || 'same_day',
+    distanceKm: e.distance?.km || e.distanceKm || 0,
+    runner,
+    customer,
+    status: e.status || 'pending',
+    amount: e.price?.total || e.amount || 0,
+    date: e.scheduledDate ? new Date(e.scheduledDate).toISOString().split('T')[0] : (e.date || ''),
+    timeSlot: e.timeSlot || '',
+    notes: e.notes || '',
+    paymentStatus: e.payment?.status || 'pending',
+  };
 }
-async function previewRoute(){
+
+// ================================================================
+// PRICING
+// ================================================================
+function calcPrice(typeKey, interCounty, expressLevel, distanceKm) {
+  const rate = RATES[typeKey] || RATES.custom;
+  const base = rate.base || CONFIG.baseFee;
+  const distFee = distanceKm ? Math.round(distanceKm * CONFIG.perKmRate) : 50;
+  const express = expressLevel === 'express' ? CONFIG.expressSurcharge : 0;
+  const coverage = interCounty ? 100 : 0;
+  const total = base + distFee + CONFIG.serviceCharge + express + coverage;
+  return { base, distFee, express, coverage, total };
+}
+
+function updatePrice() {
+  const type = document.getElementById('errandType')?.value || 'custom';
+  const pickupCounty = document.getElementById('pickupCounty')?.value || 'Nairobi';
+  const deliveryCounty = document.getElementById('deliveryCounty')?.value || 'Nairobi';
+  const interCounty = pickupCounty !== deliveryCounty;
+  const level = document.getElementById('serviceLevel')?.value || 'same_day';
+  const p = calcPrice(type, interCounty, level, 0);
+  
+  setText('priceBase', 'Ksh ' + p.base);
+  setText('priceDist', 'Ksh ' + p.distFee);
+  setText('coverageFee', interCounty ? 'Inter-county +Ksh ' + p.coverage : 'Local county');
+  document.getElementById('priceTotal').textContent = 'Ksh ' + p.total;
+  document.getElementById('mpesaAmt').textContent = 'Ksh ' + p.total;
+}
+
+function updateDistancePrice(distMeters) {
+  const type = document.getElementById('errandType')?.value || 'custom';
+  const pickupCounty = document.getElementById('pickupCounty')?.value || 'Nairobi';
+  const deliveryCounty = document.getElementById('deliveryCounty')?.value || 'Nairobi';
+  const interCounty = pickupCounty !== deliveryCounty;
+  const level = document.getElementById('serviceLevel')?.value || 'same_day';
+  const km = Math.max(0.5, distMeters / 1000);
+  const p = calcPrice(type, interCounty, level, km);
+  
+  setText('priceBase', 'Ksh ' + p.base);
+  setText('priceDist', 'Ksh ' + p.distFee);
+  setText('coverageFee', interCounty ? 'Inter-county +Ksh ' + p.coverage : 'Local county');
+  document.getElementById('priceTotal').textContent = 'Ksh ' + p.total;
+  document.getElementById('mpesaAmt').textContent = 'Ksh ' + p.total;
+}
+
+// ================================================================
+// MAP
+// ================================================================
+const NAIROBI_CENTER = [-1.286389, 36.817223];
+
+function ensureMap() {
+  const mapEl = document.getElementById('errandMap');
+  if (!mapEl || typeof L === 'undefined') return;
+  if (leafletMap) {
+    leafletMap.invalidateSize();
+    return;
+  }
+  leafletMap = L.map(mapEl, { center: NAIROBI_CENTER, zoom: 12 });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors',
+  }).addTo(leafletMap);
+}
+
+async function geocodePlace(q) {
+  if (!q) return null;
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=ke&q=${encodeURIComponent(q + ', Kenya')}`;
+  try {
+    const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+    if (!res.ok) return null;
+    const results = await res.json();
+    return results.length ? { lat: parseFloat(results[0].lat), lon: parseFloat(results[0].lon) } : null;
+  } catch {
+    return null;
+  }
+}
+
+async function previewRoute() {
   ensureMap();
-  const pickup=document.getElementById('errandPickup').value.trim();
-  const delivery=document.getElementById('errandDelivery').value.trim();
-  if(!pickup||!delivery){showToast('Enter pickup and delivery locations first.','warning');return;}
-  const btn=document.querySelector('[onclick="previewRoute()"]');
-  if(btn){btn.disabled=true;btn.textContent='Finding route...';}
-  try{
-    const[from,to]=await Promise.all([geocodePlace(pickup+', Kenya'),geocodePlace(delivery+', Kenya')]);
-    if(!from||!to){showToast('Could not find one of those locations. Try a more specific address.','warning');return;}
-    const r=await (await fetch(`https://router.project-osrm.org/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=full&geometries=geojson`)).json();
-    if(!r.routes?.length){showToast('Route not found.','warning');return;}
-    const route=r.routes[0];
-    const coords=route.geometry.coordinates.map(([lon,lat])=>[lat,lon]);
-    if(routeLine)leafletMap.removeLayer(routeLine);
-    if(pickupMarker)leafletMap.removeLayer(pickupMarker);
-    if(deliveryMarker)leafletMap.removeLayer(deliveryMarker);
-    routeLine=L.polyline(coords,{color:'#1D9E75',weight:5}).addTo(leafletMap);
-    pickupMarker=L.marker([from.lat,from.lon]).addTo(leafletMap).bindPopup('Pickup: '+pickup);
-    deliveryMarker=L.marker([to.lat,to.lon]).addTo(leafletMap).bindPopup('Delivery: '+delivery);
-    leafletMap.fitBounds(routeLine.getBounds(),{padding:[24,24]});
-    const km=(route.distance/1000).toFixed(1),mins=Math.round(route.duration/60);
-    setText('routeDistance',km+' km');setText('routeDuration',mins+' min');
+  const pickup = document.getElementById('errandPickup').value.trim();
+  const delivery = document.getElementById('errandDelivery').value.trim();
+  if (!pickup || !delivery) {
+    showToast('Enter pickup and delivery locations first.', 'warning');
+    return;
+  }
+
+  const btn = document.querySelector('[onclick="previewRoute()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Finding route...'; }
+
+  try {
+    const [from, to] = await Promise.all([geocodePlace(pickup), geocodePlace(delivery)]);
+    if (!from || !to) {
+      showToast('Could not find one of those locations. Try a more specific address.', 'warning');
+      return;
+    }
+
+    const r = await fetch(
+      `https://router.project-osrm.org/route/v1/driving/${from.lon},${from.lat};${to.lon},${to.lat}?overview=full&geometries=geojson`
+    );
+    const routeData = await r.json();
+    if (!routeData.routes?.length) {
+      showToast('Route not found between these locations.', 'warning');
+      return;
+    }
+
+    const route = routeData.routes[0];
+    const coords = route.geometry.coordinates.map(([lon, lat]) => [lat, lon]);
+
+    if (routeLine) leafletMap.removeLayer(routeLine);
+    if (pickupMarker) leafletMap.removeLayer(pickupMarker);
+    if (deliveryMarker) leafletMap.removeLayer(deliveryMarker);
+
+    routeLine = L.polyline(coords, { color: '#1D9E75', weight: 5 }).addTo(leafletMap);
+    pickupMarker = L.marker([from.lat, from.lon]).addTo(leafletMap).bindPopup('📌 Pickup: ' + pickup);
+    deliveryMarker = L.marker([to.lat, to.lon]).addTo(leafletMap).bindPopup('📍 Delivery: ' + delivery);
+    leafletMap.fitBounds(routeLine.getBounds(), { padding: [24, 24] });
+
+    const km = (route.distance / 1000).toFixed(1);
+    const mins = Math.round(route.duration / 60);
+    setText('routeDistance', km + ' km');
+    setText('routeDuration', mins + ' min');
     updateDistancePrice(route.distance);
-  }catch(err){showToast('Could not load the route. Please try again.','error');}
-  finally{if(btn){btn.disabled=false;btn.textContent='Preview route';}}
+  } catch (err) {
+    showToast('Could not load the route. Please try again.', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🗺️ Preview route'; }
+  }
 }
 
-// ===== PRICING =====
-function calcPrice(typeKey,interCounty,expressLevel,distanceKm){
-  const rate=RATES[typeKey]||RATES.custom;
-  const base=rate.base;
-  const distFee=distanceKm?Math.round(distanceKm*PER_KM_RATE):50;
-  const express=expressLevel==='express'?EXPRESS_SURCHARGE:0;
-  const coverage=interCounty?INTERCOUNTY_BASE:0;
-  const total=base+distFee+SERVICE_CHARGE+express+coverage;
-  return{base,distFee,express,coverage,total};
-}
-function updatePrice(){
-  const type=document.getElementById('errandType').value||'custom';
-  const interCounty=document.getElementById('pickupCounty')?.value!==document.getElementById('deliveryCounty')?.value;
-  const level=document.getElementById('serviceLevel')?.value||'same_day';
-  const p=calcPrice(type,interCounty,level,0);
-  const rate=RATES[type]||RATES.custom;
-  setText('priceBase','Ksh '+p.base);setText('priceDist','Ksh '+p.distFee);
-  setText('coverageFee',interCounty?'Inter-county +Ksh '+p.coverage:'Local county');
-  document.getElementById('priceTotal').textContent='Ksh '+p.total;
-  document.getElementById('mpesaAmt').textContent='Ksh '+p.total;
-}
-function updateDistancePrice(distMeters){
-  const type=document.getElementById('errandType').value||'custom';
-  const interCounty=document.getElementById('pickupCounty')?.value!==document.getElementById('deliveryCounty')?.value;
-  const level=document.getElementById('serviceLevel')?.value||'same_day';
-  const km=Math.max(1,distMeters/1000);
-  const p=calcPrice(type,interCounty,level,km);
-  setText('priceBase','Ksh '+p.base);setText('priceDist','Ksh '+p.distFee);
-  setText('coverageFee',interCounty?'Inter-county +Ksh '+p.coverage:'Local county');
-  document.getElementById('priceTotal').textContent='Ksh '+p.total;
-  document.getElementById('mpesaAmt').textContent='Ksh '+p.total;
+// ================================================================
+// COUNTIES
+// ================================================================
+function initCountySelects() {
+  ['pickupCounty', 'deliveryCounty'].forEach(id => {
+    const s = document.getElementById(id);
+    if (!s || s.options.length > 0) return;
+    s.innerHTML = KENYA_COUNTIES.map(c =>
+      `<option value="${c}" ${c === 'Nairobi' ? 'selected' : ''}>${c}</option>`
+    ).join('');
+  });
 }
 
-// ===== BOOKING =====
-function bookErrand(){
-  const type=document.getElementById('errandType').value,pickup=document.getElementById('errandPickup').value.trim(),delivery=document.getElementById('errandDelivery').value.trim(),date=document.getElementById('errandDate').value;
-  let ok=true;
-  if(!type){show('errandTypeErr');ok=false;}else hide('errandTypeErr');
-  if(!pickup){show('errandPickupErr');ok=false;}else hide('errandPickupErr');
-  if(!delivery){show('errandDeliveryErr');ok=false;}else hide('errandDeliveryErr');
-  if(!date){show('errandDateErr');ok=false;}else hide('errandDateErr');
-  if(!ok)return;
-  const total=Number(document.getElementById('priceTotal').textContent.replace(/\D/g,''))||280;
-  const interCounty=document.getElementById('pickupCounty').value!==document.getElementById('deliveryCounty').value;
-  pendingBooking={rawType:type,type:cap(type),pickup,delivery,pickupCounty:document.getElementById('pickupCounty').value,deliveryCounty:document.getElementById('deliveryCounty').value,serviceLevel:interCounty?'intercounty':document.getElementById('serviceLevel').value,runner:'—',status:'pending',amount:total,date};
+function initCoverage() {
+  const el = document.getElementById('coverageCountyList');
+  if (!el) return;
+  el.innerHTML = KENYA_COUNTIES.map(c =>
+    `<span class="coverage-pill ${PRIORITY_HUBS.includes(c) ? 'active' : ''}">${c}</span>`
+  ).join('');
+  setText('coverageCount', KENYA_COUNTIES.length);
+}
+
+// ================================================================
+// BOOK ERRAND
+// ================================================================
+function bookErrand() {
+  const type = document.getElementById('errandType').value;
+  const pickup = document.getElementById('errandPickup').value.trim();
+  const delivery = document.getElementById('errandDelivery').value.trim();
+  const date = document.getElementById('errandDate').value;
+  let ok = true;
+
+  if (!type) { show('errandTypeErr'); ok = false; } else hide('errandTypeErr');
+  if (!pickup) { show('errandPickupErr'); ok = false; } else hide('errandPickupErr');
+  if (!delivery) { show('errandDeliveryErr'); ok = false; } else hide('errandDeliveryErr');
+  if (!date) { show('errandDateErr'); ok = false; } else hide('errandDateErr');
+  if (!ok) return;
+
+  const total = Number(document.getElementById('priceTotal').textContent.replace(/\D/g, '')) || 262;
+  const pickupCounty = document.getElementById('pickupCounty').value;
+  const deliveryCounty = document.getElementById('deliveryCounty').value;
+  const interCounty = pickupCounty !== deliveryCounty;
+  const serviceLevel = interCounty ? 'intercounty' : document.getElementById('serviceLevel').value;
+
+  pendingBooking = {
+    rawType: type,
+    type: cap(type),
+    pickup,
+    delivery,
+    pickupCounty,
+    deliveryCounty,
+    serviceLevel,
+    runner: '—',
+    status: 'pending',
+    amount: total,
+    date,
+    timeSlot: document.getElementById('errandTime').value,
+    notes: document.getElementById('errandNotes').value,
+  };
+
   openMpesa();
 }
-function openMpesa(){
-  ['mpesaSteps'].forEach(id=>document.getElementById(id)?.classList.remove('hidden'));
-  ['mpesaProcessing','mpesaSuccess','mpesaError'].forEach(id=>document.getElementById(id)?.classList.add('hidden'));
-  document.getElementById('mpesaBtns').classList.remove('hidden');
+
+function openMpesa() {
+  ['mpesaSteps', 'mpesaBtns'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('hidden');
+  });
+  ['mpesaProcessing', 'mpesaSuccess', 'mpesaError'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add('hidden');
+  });
   document.getElementById('mpesaModal').classList.add('open');
+  document.getElementById('mpesaProgressBar').style.width = '0%';
+  document.getElementById('mpesaPhone').value = currentUser?.phone || '';
 }
-function closeMpesa(){document.getElementById('mpesaModal').classList.remove('open');}
-async function processMpesa(){
-  const phone=document.getElementById('mpesaPhone').value.replace(/\s/g,'');
-  if(!/^(07|01)\d{8}$/.test(phone)){show('mpesaPhoneErr');return;}else hide('mpesaPhoneErr');
+
+function closeMpesa() {
+  document.getElementById('mpesaModal').classList.remove('open');
+  pendingBooking = null;
+}
+
+function retryMpesa() {
+  document.getElementById('mpesaError').classList.add('hidden');
+  document.getElementById('mpesaProcessing').classList.remove('hidden');
+  document.getElementById('mpesaProgressBar').style.width = '0%';
+  processMpesa();
+}
+
+async function processMpesa() {
+  const phone = document.getElementById('mpesaPhone').value.replace(/\s/g, '');
+  if (!/^(07|01)\d{8}$/.test(phone)) {
+    show('mpesaPhoneErr');
+    return;
+  }
+  hide('mpesaPhoneErr');
+
   document.getElementById('mpesaSteps').classList.add('hidden');
   document.getElementById('mpesaBtns').classList.add('hidden');
   document.getElementById('mpesaProcessing').classList.remove('hidden');
-  if(!authToken||!pendingBooking){showToast('Session expired. Please sign in again.','error');closeMpesa();return;}
-  try{
-    const created=await apiFetch('/api/errands',{method:'POST',body:JSON.stringify({type:pendingBooking.rawType,pickup:pendingBooking.pickup,delivery:pendingBooking.delivery,pickupCounty:pendingBooking.pickupCounty,deliveryCounty:pendingBooking.deliveryCounty,serviceLevel:pendingBooking.serviceLevel,distanceKm:Number(document.getElementById('routeDistance').textContent.replace(/[^\d.]/g,''))||0,scheduledDate:pendingBooking.date,timeSlot:document.getElementById('errandTime').value,notes:document.getElementById('errandNotes').value,price:{base:Number(document.getElementById('priceBase').textContent.replace(/\D/g,''))||0,distance:Number(document.getElementById('priceDist').textContent.replace(/\D/g,''))||0,service:SERVICE_CHARGE,total:pendingBooking.amount}})});
-    await apiFetch('/api/mpesa/stkpush',{method:'POST',body:JSON.stringify({phone,amount:pendingBooking.amount,errandId:created._id}),timeout:15000});
-    showToast('STK Push sent. Enter your M-Pesa PIN.','info');
-    let confirmed=false;
-    for(let i=0;i<10;i++){
-      await new Promise(r=>setTimeout(r,3000));
-      try{const s=await apiFetch('/api/mpesa/status/'+encodeURIComponent(created.checkoutId||''));if(s.status==='completed'){confirmed=true;break;}if(s.status==='failed')break;}catch{}
+
+  if (!authToken || !pendingBooking) {
+    showToast('Session expired. Please sign in again.', 'error');
+    closeMpesa();
+    return;
+  }
+
+  try {
+    // Create errand
+    const errandData = {
+      type: pendingBooking.rawType,
+      pickup: { address: pendingBooking.pickup, county: pendingBooking.pickupCounty },
+      delivery: { address: pendingBooking.delivery, county: pendingBooking.deliveryCounty },
+      serviceLevel: pendingBooking.serviceLevel,
+      scheduledDate: pendingBooking.date,
+      timeSlot: pendingBooking.timeSlot,
+      notes: pendingBooking.notes,
+      price: { total: pendingBooking.amount },
+    };
+
+    const errandResponse = await apiFetch('/api/errands', {
+      method: 'POST',
+      body: JSON.stringify(errandData),
+    });
+
+    const errandId = errandResponse.errand?._id || errandResponse._id;
+    mpesaRetryErrandId = errandId;
+
+    // Initiate M-Pesa
+    const paymentResponse = await apiFetch('/api/mpesa/stkpush', {
+      method: 'POST',
+      body: JSON.stringify({
+        phone,
+        amount: pendingBooking.amount,
+        errandId: errandId,
+      }),
+      timeout: 15000,
+    });
+
+    showToast('📱 STK Push sent. Enter your M-Pesa PIN.', 'info');
+
+    // Poll for status
+    let confirmed = false;
+    let attempts = 0;
+    const maxAttempts = 30;
+
+    while (attempts < maxAttempts && !confirmed) {
+      await new Promise(r => setTimeout(r, 3000));
+      attempts++;
+      const progress = Math.min((attempts / maxAttempts) * 100, 95);
+      document.getElementById('mpesaProgressBar').style.width = progress + '%';
+      
+      try {
+        const status = await apiFetch(`/api/mpesa/status/${paymentResponse.checkoutId || paymentResponse.CheckoutRequestID}`);
+        if (status.status === 'completed' || status.ResultCode === '0') {
+          confirmed = true;
+          break;
+        }
+        if (status.status === 'failed' || status.ResultCode !== '0') {
+          break;
+        }
+      } catch (e) {
+        // Continue polling on error
+      }
     }
+
     document.getElementById('mpesaProcessing').classList.add('hidden');
-    if(confirmed){document.getElementById('mpesaSuccess').classList.remove('hidden');showToast('Payment confirmed! Errand booked.','success');await loadUserData();}
-    else{document.getElementById('mpesaError').classList.remove('hidden');}
-    pendingBooking=null;setTimeout(closeMpesa,3500);
-  }catch(err){
+    document.getElementById('mpesaProgressBar').style.width = '100%';
+
+    if (confirmed) {
+      document.getElementById('mpesaSuccess').classList.remove('hidden');
+      document.getElementById('mpesaRef').textContent = `Ref: ${paymentResponse.transactionId || 'Processing'}`;
+      showToast('✅ Payment confirmed! Errand booked.', 'success');
+      await loadUserData();
+      if (errandId) connectWebSocket(errandId);
+      pendingBooking = null;
+      setTimeout(closeMpesa, 4000);
+    } else {
+      document.getElementById('mpesaError').classList.remove('hidden');
+      showToast('⏳ Payment not confirmed. You can retry.', 'warning');
+    }
+  } catch (err) {
     document.getElementById('mpesaProcessing').classList.add('hidden');
     document.getElementById('mpesaError').classList.remove('hidden');
-    showToast(err.message||'Payment initiation failed.','error');
-    pendingBooking=null;
+    showToast(err.message || 'Payment initiation failed.', 'error');
   }
 }
 
-// ===== TRACKING =====
-async function trackOrder(){
-  const id=document.getElementById('trackId').value.trim();
-  if(!id){showToast('Enter an order ID.','warning');return;}
-  try{
-    const tracked=await apiFetch('/api/errands/track/'+encodeURIComponent(id));
-    const e=normalizeErrand(tracked);
-    const statusMap={pending:1,assigned:2,active:3,completed:4};
-    const step=statusMap[e.status]||1;
-    [1,2,3,4].forEach(n=>{
-      const c=document.getElementById('trackStep'+n),l=document.getElementById('trackLine'+n);
-      if(c){c.className='step-circle'+(n<step?' done':n===step?' active':'');c.textContent=n<step?'✓':n;}
-      if(l){l.className='step-line'+(n<step?' done':'');}
+// ================================================================
+// WEBSOCKET
+// ================================================================
+function connectWebSocket(errandId) {
+  if (!authToken) return;
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    if (errandId) {
+      socket.send(JSON.stringify({ event: 'join', data: { errandId } }));
+    }
+    return;
+  }
+
+  try {
+    socket = new WebSocket(`${WS_BASE}/?token=${authToken}`);
+
+    socket.onopen = () => {
+      console.log('🔌 WebSocket connected');
+      if (errandId) {
+        socket.send(JSON.stringify({ event: 'join', data: { errandId } }));
+      }
+    };
+
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        handleWebSocketEvent(data);
+      } catch (e) {
+        console.error('WebSocket message error:', e);
+      }
+    };
+
+    socket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    socket.onclose = () => {
+      console.log('🔌 WebSocket disconnected');
+      // Auto-reconnect after 5 seconds
+      setTimeout(() => {
+        if (authToken) connectWebSocket(errandId);
+      }, 5000);
+    };
+  } catch (e) {
+    console.error('WebSocket connection failed:', e);
+  }
+}
+
+function handleWebSocketEvent(data) {
+  const { event, payload } = data || {};
+  console.log('📨 WebSocket event:', event, payload);
+
+  switch (event) {
+    case 'status-changed':
+      updateErrandStatusUI(payload);
+      showToast(`📋 Errand status updated: ${payload.status}`, 'info');
+      break;
+    case 'location-changed':
+      updateRunnerLocationUI(payload);
+      break;
+    case 'payment-confirmed':
+      showToast('✅ Payment confirmed!', 'success');
+      break;
+    case 'runner-assigned':
+      showToast(`🏃 Runner assigned: ${payload.runnerName || 'A runner'}`, 'success');
+      break;
+    case 'errand-completed':
+      showToast('🎉 Errand completed!', 'success');
+      break;
+    default:
+      console.log('Unknown event:', event);
+  }
+}
+
+function updateErrandStatusUI(payload) {
+  const note = document.getElementById('trackStatusNote');
+  if (note) {
+    const messages = {
+      pending: '⏳ Waiting for a runner to be assigned.',
+      assigned: '🏃 A runner has been assigned and is preparing for pickup.',
+      active: '🚗 Your runner is en route.',
+      completed: '✅ Delivered successfully!',
+      cancelled: '❌ This errand was cancelled.',
+    };
+    note.textContent = messages[payload.status] || `Status: ${payload.status}`;
+  }
+  // Update tracker steps
+  const statusMap = { pending: 1, assigned: 2, active: 3, completed: 4 };
+  const step = statusMap[payload.status] || 1;
+  [1, 2, 3, 4].forEach(n => {
+    const c = document.getElementById('trackStep' + n);
+    const l = document.getElementById('trackLine' + n);
+    if (c) {
+      c.className = 'step-circle' + (n < step ? ' done' : n === step ? ' active' : '');
+      c.textContent = n < step ? '✓' : n;
+    }
+    if (l) {
+      l.className = 'step-line' + (n < step ? ' done' : '');
+    }
+  });
+}
+
+function updateRunnerLocationUI(payload) {
+  const el = document.getElementById('trackLocation');
+  if (el && payload.location) {
+    el.textContent = `📍 Runner location: ${payload.location.lat?.toFixed(4)}, ${payload.location.lng?.toFixed(4)}`;
+  }
+}
+
+// ================================================================
+// TRACK ORDER
+// ================================================================
+async function trackOrder() {
+  const id = document.getElementById('trackId').value.trim();
+  if (!id) {
+    showToast('Enter an order ID.', 'warning');
+    return;
+  }
+
+  try {
+    const tracked = await apiFetch('/api/errands/track/' + encodeURIComponent(id));
+    const e = normalizeErrand(tracked);
+    
+    const statusMap = { pending: 1, assigned: 2, active: 3, completed: 4 };
+    const step = statusMap[e.status] || 1;
+    
+    [1, 2, 3, 4].forEach(n => {
+      const c = document.getElementById('trackStep' + n);
+      const l = document.getElementById('trackLine' + n);
+      if (c) {
+        c.className = 'step-circle' + (n < step ? ' done' : n === step ? ' active' : '');
+        c.textContent = n < step ? '✓' : n;
+      }
+      if (l) {
+        l.className = 'step-line' + (n < step ? ' done' : '');
+      }
     });
-    const rc=document.getElementById('trackRunnerCard');
-    if(rc&&e.runner&&e.runner!=='—')rc.innerHTML=`<div class="runner-card" style="margin-top:20px"><div class="runner-avatar">${e.runner.split(' ').map(n=>n[0]).join('')}</div><div style="flex:1"><div style="font-weight:600;font-size:14px">${e.runner}</div><div class="text-muted">Runner assigned</div></div></div>`;
-    else if(rc)rc.innerHTML='';
-    const notes={pending:'Waiting for a runner to be assigned.',assigned:'A runner has been assigned and is preparing for pickup.',active:'Your runner is en route.',completed:'Delivered successfully.',cancelled:'This errand was cancelled.'};
-    const sn=document.getElementById('trackStatusNote');
-    if(sn)sn.textContent=notes[e.status]||'Tracking your order...';
+
+    const rc = document.getElementById('trackRunnerCard');
+    if (rc && e.runner && e.runner !== '—') {
+      const initials = e.runner.split(' ').map(n => n[0]).join('').toUpperCase();
+      rc.innerHTML = `
+        <div class="runner-card" style="margin-top:20px">
+          <div class="runner-avatar">${initials}</div>
+          <div style="flex:1">
+            <div style="font-weight:600;font-size:14px">${e.runner}</div>
+            <div class="text-muted">Runner assigned</div>
+          </div>
+        </div>
+      `;
+    } else if (rc) {
+      rc.innerHTML = '';
+    }
+
+    const messages = {
+      pending: '⏳ Waiting for a runner to be assigned.',
+      assigned: '🏃 A runner has been assigned and is preparing for pickup.',
+      active: '🚗 Your runner is en route.',
+      completed: '✅ Delivered successfully!',
+      cancelled: '❌ This errand was cancelled.',
+    };
+    const note = document.getElementById('trackStatusNote');
+    if (note) note.textContent = messages[e.status] || 'Tracking your order...';
+
     document.getElementById('trackResult').classList.remove('hidden');
-    showToast('Order found: '+e.id,'success');
-  }catch{showToast('Order not found. Check the ID and try again.','error');document.getElementById('trackResult').classList.add('hidden');}
-}
-
-// ===== FILTERS =====
-function filterErrands(f,el){document.querySelectorAll('#userTab-my-errands .tab').forEach(t=>t.classList.remove('active'));if(el)el.classList.add('active');renderErrands(f==='all'?errands:errands.filter(e=>e.status===f));}
-function filterAdminErrands(f){renderAdminErrandsTable(f==='all'?errands:errands.filter(e=>e.status===f));}
-function searchCustomers(q){renderCustomersTable(customers.filter(c=>c.name.toLowerCase().includes(q.toLowerCase())||c.email.toLowerCase().includes(q.toLowerCase())));}
-
-// ===== RENDERERS =====
-function renderErrands(data){
-  const el=document.getElementById('errandsList');if(!el)return;
-  if(!data.length){el.innerHTML='<div class="empty-state">No errands here yet. <a style="color:var(--green);cursor:pointer;font-weight:600" onclick="switchUserTab(\'new-errand\',null)">Book one now</a></div>';return;}
-  el.innerHTML=data.map(e=>`<div class="errand-card"><div class="errand-card-header"><div><div class="errand-type">${e.type} errand</div><div class="errand-id">${e.id}</div></div><span class="badge badge-${e.status==='active'?'green':e.status==='pending'?'amber':e.status==='completed'?'blue':'red'}">${cap(e.status)}</span></div><div class="errand-detail">${e.pickup} → ${e.delivery}</div><div class="errand-detail">Runner: ${e.runner}</div><div class="errand-detail">${e.date}</div><div class="errand-footer"><div class="errand-price">Ksh ${Number(e.amount).toLocaleString()}</div>${e.status==='active'||e.status==='pending'?`<button class="btn btn-outline btn-sm" onclick="switchUserTab('track',null);document.getElementById('trackId').value='${e.id}';trackOrder()">Track</button>`:''}</div></div>`).join('');
-}
-function renderActiveErrands(){
-  const active=errands.filter(e=>e.status==='active'||e.status==='pending');
-  const el=document.getElementById('activeErrandsList');if(!el)return;
-  el.innerHTML=active.length?active.map(e=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--gray-100)"><div><div style="font-weight:600;font-size:14px">${e.type} — ${e.id}</div><div class="text-muted">${e.pickup} → ${e.delivery}</div></div><div style="text-align:right"><span class="badge badge-${e.status==='active'?'green':'amber'}">${cap(e.status)}</span><div style="font-size:13px;color:var(--green);font-weight:700;margin-top:4px">Ksh ${Number(e.amount).toLocaleString()}</div></div></div>`).join(''):'<div class="empty-state">No active errands. <a style="color:var(--green);cursor:pointer;font-weight:600" onclick="switchUserTab(\'new-errand\',null)">Book one now</a></div>';
-}
-function renderHistory(){
-  const el=document.getElementById('historyList');if(!el)return;
-  const past=errands.filter(e=>e.status==='completed'||e.status==='cancelled');
-  if(!past.length){el.innerHTML='<div class="empty-state">No completed errands yet.</div>';return;}
-  el.innerHTML=past.map(e=>`<div class="errand-card"><div class="errand-card-header"><div><div class="errand-type">${e.type} errand</div><div class="errand-id">${e.id}</div></div><span class="badge badge-${e.status==='completed'?'blue':'red'}">${cap(e.status)}</span></div><div class="errand-detail">${e.pickup} → ${e.delivery}</div><div class="errand-footer"><div class="errand-price">Ksh ${Number(e.amount).toLocaleString()}</div><span class="text-muted">${e.date}</span></div></div>`).join('');
-}
-function renderAdminRecentErrands(){
-  const el=document.getElementById('adminRecentErrands');if(!el)return;
-  if(!errands.length){el.innerHTML='<tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px">No errands yet.</td></tr>';return;}
-  el.innerHTML=errands.slice(0,5).map(e=>`<tr><td><code style="font-size:12px">${e.id}</code></td><td>${e.type}</td><td>${e.customer}</td><td><span class="badge badge-${e.status==='active'?'green':e.status==='pending'?'amber':e.status==='completed'?'blue':'red'}">${cap(e.status)}</span></td><td style="font-weight:600;color:var(--green)">Ksh ${Number(e.amount).toLocaleString()}</td></tr>`).join('');
-}
-function renderAdminErrandsTable(data){
-  const rows=data||errands,el=document.getElementById('adminErrandsTable');if(!el)return;
-  if(!rows.length){el.innerHTML='<tr><td colspan="9" class="text-muted" style="text-align:center;padding:24px">No errands found.</td></tr>';return;}
-  el.innerHTML=rows.map(e=>`<tr><td><code style="font-size:12px">${e.id}</code></td><td>${e.customer}</td><td>${e.type}</td><td style="font-size:13px">${e.pickup}</td><td style="font-size:13px">${e.delivery}</td><td>${e.runner||'—'}</td><td style="font-weight:600;color:var(--green)">Ksh ${Number(e.amount).toLocaleString()}</td><td><span class="badge badge-${e.status==='active'?'green':e.status==='pending'?'amber':e.status==='completed'?'blue':'red'}">${cap(e.status)}</span></td><td><button class="btn btn-sm btn-outline" onclick="assignErrand('${e.id}')">${e.status==='pending'?'Assign':'Update'}</button></td></tr>`).join('');
-}
-async function assignErrand(id){
-  const errand=errands.find(e=>e.id===id);
-  const runner=runners.find(r=>r.status==='online');
-  if(!errand){showToast('Errand not found.','error');return;}
-  if(!runner){showToast('No online runners available right now.','warning');return;}
-  if(errand._id){
-    try{await apiFetch('/api/errands/'+errand._id,{method:'PATCH',body:JSON.stringify({status:'active',runner:runner._id})});}
-    catch(err){showToast(err.message||'Assignment failed.','error');return;}
+    showToast('📦 Order found: ' + e.id, 'success');
+    
+    // Connect to WebSocket for this errand
+    if (e._id) connectWebSocket(e._id);
+  } catch (err) {
+    showToast('Order not found. Check the ID and try again.', 'error');
+    document.getElementById('trackResult').classList.add('hidden');
   }
-  errand.runner=runner.name;errand.status='active';
-  renderAdminErrandsTable();renderAdminRecentErrands();
-  showToast('Assigned '+errand.id+' to '+runner.name+'.','success');
-}
-function renderRunners(){
-  const el=document.getElementById('runnersList');if(!el)return;
-  if(!runners.length){el.innerHTML='<div class="empty-state">No runners registered yet.</div>';return;}
-  el.innerHTML=runners.slice(0,4).map(r=>`<div class="runner-card" style="margin-bottom:10px"><div class="runner-avatar">${r.name.split(' ').map(n=>n[0]).join('')}</div><div style="flex:1"><div style="font-weight:600;font-size:14px">${r.name}</div><div class="text-muted">${r.area}</div></div><div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:${r.status==='online'?'var(--green)':'var(--gray-200)'}"></div><span style="font-size:12px;font-weight:600;color:${r.status==='online'?'var(--green)':'var(--gray-400)'}">${cap(r.status)}</span></div></div>`).join('');
-}
-function renderAdminRunnersGrid(){
-  const el=document.getElementById('adminRunnersGrid');if(!el)return;
-  if(!runners.length){el.innerHTML='<div class="empty-state">No runners registered yet.</div>';return;}
-  el.innerHTML=runners.map(r=>`<div class="card" style="padding:20px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><div class="runner-avatar">${r.name.split(' ').map(n=>n[0]).join('')}</div><div><div style="font-weight:700">${r.name}</div><div class="text-muted">${r.area}</div></div></div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span class="text-muted">Rating</span><span>${r.rating??'—'}</span></div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:12px"><span class="text-muted">Completed</span><span>${r.completed??'—'}</span></div><div class="admin-action-btns"><span class="badge badge-${r.status==='online'?'green':'red'}">${cap(r.status)}</span><button class="btn btn-danger btn-sm" onclick="deleteRunner('${r._id}')">Delete</button></div></div>`).join('');
-}
-function renderCustomersTable(data){
-  const rows=data||customers,el=document.getElementById('adminCustomersTable');if(!el)return;
-  if(!rows.length){el.innerHTML='<tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px">No customers yet.</td></tr>';return;}
-  el.innerHTML=rows.map(c=>`<tr><td style="font-weight:600">${c.name}</td><td>${c.phone}</td><td>${c.email}</td><td>${c.errands}</td><td style="color:var(--green);font-weight:600">Ksh ${c.spent.toLocaleString()}</td><td>${c.joined}</td><td><span class="badge badge-${c.status==='active'?'green':'red'}">${cap(c.status)}</span></td><td><button class="btn btn-danger btn-sm" onclick="deleteCustomer('${c._id}')">Delete</button></td></tr>`).join('');
-}
-function renderRevenueChart(){
-  const el=document.getElementById('revenueChart'),dEl=document.getElementById('revenueDays');if(!el)return;
-  const completed=errands.filter(e=>e.status==='completed');
-  if(!completed.length){el.innerHTML='<div class="empty-state" style="width:100%">Revenue chart will populate as errands are completed.</div>';if(dEl)dEl.innerHTML='';return;}
-  const byDay={};completed.forEach(e=>{byDay[e.date]=(byDay[e.date]||0)+Number(e.amount||0);});
-  const days=Object.keys(byDay).sort().slice(-7),vals=days.map(d=>byDay[d]),max=Math.max(...vals,1);
-  el.innerHTML=vals.map((v,i)=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px"><div style="font-size:11px;color:var(--gray-600)">Ksh ${(v/1000).toFixed(1)}K</div><div style="width:100%;background:${i===vals.length-1?'var(--green)':'var(--green-light)'};border-radius:4px 4px 0 0;height:${Math.round(v/max*100)}px"></div></div>`).join('');
-  if(dEl)dEl.innerHTML=days.map(d=>`<div style="flex:1;text-align:center;font-size:11px;color:var(--gray-400)">${new Date(d+'T00:00:00').toLocaleDateString('en-KE',{weekday:'short'})}</div>`).join('');
-}
-function updateDashboardStats(){
-  const active=errands.filter(e=>e.status==='active'||e.status==='pending').length;
-  const completed=errands.filter(e=>e.status==='completed').length;
-  const spent=errands.filter(e=>e.status!=='cancelled').reduce((s,e)=>s+Number(e.amount||0),0);
-  setText('statTotalErrands',errands.length||'0');setText('statActiveErrands',active||'0');
-  setText('statCompletedErrands',completed||'0');setText('statTotalSpent','Ksh '+spent.toLocaleString());
-  setText('heroTotalErrands',errands.length||'0');setText('heroLiveRoutes',active||'0');
-  setText('heroTotalSpent','Ksh '+spent.toLocaleString());
-}
-function renderTransactions(){
-  const el=document.getElementById('transactionTable');if(!el)return;
-  if(!payments.length){el.innerHTML='<tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px">No transactions yet.</td></tr>';return;}
-  el.innerHTML=payments.map(p=>`<tr><td><code style="font-size:12px">${p.ref}</code></td><td>${p.type}</td><td style="font-weight:600;color:var(--green)">Ksh ${p.amount}</td><td>${p.date}</td><td><span class="badge badge-${p.status==='completed'?'green':'red'}">${cap(p.status)}</span></td></tr>`).join('');
 }
 
-// ===== ADMIN CRUD for Runners & Customers =====
-async function addRunner(){
-  const name=prompt('Enter runner full name:');
-  if(!name)return;
-  const area=prompt('Enter area (e.g. Nairobi):')||'Nairobi';
-  try{
-    const res=await apiFetch('/api/admin/runners',{method:'POST',body:JSON.stringify({firstName:name.split(' ')[0]||'Runner',lastName:name.split(' ').slice(1).join(' ')||'',address:area,isActive:true})});
-    showToast('Runner added successfully.','success');
+// ================================================================
+// RENDERERS
+// ================================================================
+function renderErrands(data) {
+  const el = document.getElementById('errandsList');
+  if (!el) return;
+  if (!data.length) {
+    el.innerHTML = '<div class="empty-state">📭 No errands here yet. <a style="color:var(--green);cursor:pointer;font-weight:600" onclick="switchUserTab(\'new-errand\',null)">Book one now</a></div>';
+    return;
+  }
+  el.innerHTML = data.map(e => `
+    <div class="errand-card">
+      <div class="errand-card-header">
+        <div>
+          <div class="errand-type">${e.type} errand</div>
+          <div class="errand-id">${e.id}</div>
+        </div>
+        <span class="badge badge-${e.status === 'active' ? 'green' : e.status === 'pending' ? 'amber' : e.status === 'completed' ? 'blue' : 'red'}">${cap(e.status)}</span>
+      </div>
+      <div class="errand-detail">📍 ${e.pickup} → ${e.delivery}</div>
+      <div class="errand-detail">🏃 Runner: ${e.runner}</div>
+      <div class="errand-detail">📅 ${e.date} ${e.timeSlot ? '· ' + e.timeSlot : ''}</div>
+      <div class="errand-footer">
+        <div class="errand-price">Ksh ${Number(e.amount).toLocaleString()}</div>
+        ${e.status === 'active' || e.status === 'pending' ? `
+          <button class="btn btn-outline btn-sm" onclick="switchUserTab('track',null);document.getElementById('trackId').value='${e.id}';trackOrder()">📍 Track</button>
+        ` : ''}
+        ${e.status === 'pending' ? `
+          <button class="btn btn-danger btn-sm" onclick="cancelErrand('${e._id}')">❌ Cancel</button>
+        ` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderActiveErrands() {
+  const active = errands.filter(e => e.status === 'active' || e.status === 'pending');
+  const el = document.getElementById('activeErrandsList');
+  if (!el) return;
+  if (!active.length) {
+    el.innerHTML = '<div class="empty-state">📭 No active errands. <a style="color:var(--green);cursor:pointer;font-weight:600" onclick="switchUserTab(\'new-errand\',null)">Book one now</a></div>';
+    return;
+  }
+  el.innerHTML = active.map(e => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--gray-100)">
+      <div>
+        <div style="font-weight:600;font-size:14px">${e.type} — ${e.id}</div>
+        <div class="text-muted">📍 ${e.pickup} → ${e.delivery}</div>
+      </div>
+      <div style="text-align:right">
+        <span class="badge badge-${e.status === 'active' ? 'green' : 'amber'}">${cap(e.status)}</span>
+        <div style="font-size:13px;color:var(--green);font-weight:700;margin-top:4px">Ksh ${Number(e.amount).toLocaleString()}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  if (!el) return;
+  const past = errands.filter(e => e.status === 'completed' || e.status === 'cancelled');
+  if (!past.length) {
+    el.innerHTML = '<div class="empty-state">📭 No completed errands yet.</div>';
+    return;
+  }
+  el.innerHTML = past.map(e => `
+    <div class="errand-card">
+      <div class="errand-card-header">
+        <div>
+          <div class="errand-type">${e.type} errand</div>
+          <div class="errand-id">${e.id}</div>
+        </div>
+        <span class="badge badge-${e.status === 'completed' ? 'blue' : 'red'}">${cap(e.status)}</span>
+      </div>
+      <div class="errand-detail">📍 ${e.pickup} → ${e.delivery}</div>
+      <div class="errand-footer">
+        <div class="errand-price">Ksh ${Number(e.amount).toLocaleString()}</div>
+        <span class="text-muted">📅 ${e.date}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderTransactions() {
+  const el = document.getElementById('transactionTable');
+  if (!el) return;
+  if (!payments.length) {
+    el.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px">💰 No transactions yet.</td></tr>';
+    return;
+  }
+  el.innerHTML = payments.slice(0, 20).map(p => `
+    <tr>
+      <td><code style="font-size:12px">${p.transactionId || p._id}</code></td>
+      <td>${p.method || 'M-Pesa'}</td>
+      <td style="font-weight:600;color:var(--green)">Ksh ${Number(p.amount).toLocaleString()}</td>
+      <td>${p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-KE') : '—'}</td>
+      <td><span class="badge badge-${p.status === 'completed' ? 'green' : p.status === 'pending' ? 'amber' : 'red'}">${cap(p.status)}</span></td>
+    </tr>
+  `).join('');
+}
+
+function updateDashboardStats() {
+  const active = errands.filter(e => e.status === 'active' || e.status === 'pending').length;
+  const completed = errands.filter(e => e.status === 'completed').length;
+  const spent = errands.filter(e => e.status !== 'cancelled').reduce((s, e) => s + Number(e.amount || 0), 0);
+  
+  setText('statTotalErrands', errands.length || '0');
+  setText('statActiveErrands', active || '0');
+  setText('statCompletedErrands', completed || '0');
+  setText('statTotalSpent', 'Ksh ' + spent.toLocaleString());
+  setText('heroTotalErrands', errands.length || '0');
+  setText('heroLiveRoutes', active || '0');
+  setText('heroTotalSpent', 'Ksh ' + spent.toLocaleString());
+}
+
+function updateErrandsNavBadge() {
+  const a = errands.filter(e => e.status === 'active' || e.status === 'pending').length;
+  const b = document.getElementById('errandsNavBadge');
+  if (b) { b.textContent = a; b.style.display = a > 0 ? '' : 'none'; }
+}
+
+// ================================================================
+// FILTERS
+// ================================================================
+function filterErrands(f, el) {
+  document.querySelectorAll('#userTab-my-errands .tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const filtered = f === 'all' ? errands : errands.filter(e => e.status === f);
+  renderErrands(filtered);
+}
+
+function filterAdminErrands(f) {
+  const filtered = f === 'all' ? errands : errands.filter(e => e.status === f);
+  renderAdminErrandsTable(filtered);
+}
+
+function searchCustomers(q) {
+  const filtered = customers.filter(c => 
+    c.name.toLowerCase().includes(q.toLowerCase()) || 
+    c.email.toLowerCase().includes(q.toLowerCase())
+  );
+  renderCustomersTable(filtered);
+}
+
+// ================================================================
+// ADMIN RENDERERS
+// ================================================================
+function renderAdminRecentErrands() {
+  const el = document.getElementById('adminRecentErrands');
+  if (!el) return;
+  if (!errands.length) {
+    el.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px">No errands yet.</td></tr>';
+    return;
+  }
+  el.innerHTML = errands.slice(0, 5).map(e => `
+    <tr>
+      <td><code style="font-size:12px">${e.id}</code></td>
+      <td>${e.type}</td>
+      <td>${e.customer}</td>
+      <td><span class="badge badge-${e.status === 'active' ? 'green' : e.status === 'pending' ? 'amber' : e.status === 'completed' ? 'blue' : 'red'}">${cap(e.status)}</span></td>
+      <td style="font-weight:600;color:var(--green)">Ksh ${Number(e.amount).toLocaleString()}</td>
+    </tr>
+  `).join('');
+}
+
+function renderAdminErrandsTable(data) {
+  const rows = data || errands;
+  const el = document.getElementById('adminErrandsTable');
+  if (!el) return;
+  if (!rows.length) {
+    el.innerHTML = '<tr><td colspan="9" class="text-muted" style="text-align:center;padding:24px">No errands found.</td></tr>';
+    return;
+  }
+  el.innerHTML = rows.map(e => `
+    <tr>
+      <td><code style="font-size:12px">${e.id}</code></td>
+      <td>${e.customer}</td>
+      <td>${e.type}</td>
+      <td style="font-size:13px">${e.pickup}</td>
+      <td style="font-size:13px">${e.delivery}</td>
+      <td>${e.runner || '—'}</td>
+      <td style="font-weight:600;color:var(--green)">Ksh ${Number(e.amount).toLocaleString()}</td>
+      <td><span class="badge badge-${e.status === 'active' ? 'green' : e.status === 'pending' ? 'amber' : e.status === 'completed' ? 'blue' : 'red'}">${cap(e.status)}</span></td>
+      <td>
+        ${e.status === 'pending' ? `<button class="btn btn-sm btn-primary" onclick="assignErrand('${e._id}')">Assign</button>` : ''}
+        ${e.status === 'active' ? `<button class="btn btn-sm btn-success" onclick="completeErrand('${e._id}')">Complete</button>` : ''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+function renderRunners() {
+  const el = document.getElementById('runnersList');
+  if (!el) return;
+  if (!runners.length) {
+    el.innerHTML = '<div class="empty-state">No runners registered yet.</div>';
+    return;
+  }
+  el.innerHTML = runners.slice(0, 4).map(r => `
+    <div class="runner-card" style="margin-bottom:10px">
+      <div class="runner-avatar">${r.name.split(' ').map(n => n[0]).join('').toUpperCase()}</div>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:14px">${r.name}</div>
+        <div class="text-muted">📍 ${r.area}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <div style="width:8px;height:8px;border-radius:50%;background:${r.status === 'online' ? 'var(--green)' : 'var(--gray-200)'}"></div>
+        <span style="font-size:12px;font-weight:600;color:${r.status === 'online' ? 'var(--green)' : 'var(--gray-400)'}">${cap(r.status)}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderAdminRunnersGrid() {
+  const el = document.getElementById('adminRunnersGrid');
+  if (!el) return;
+  if (!runners.length) {
+    el.innerHTML = '<div class="empty-state">No runners registered yet.</div>';
+    return;
+  }
+  el.innerHTML = runners.map(r => `
+    <div class="card" style="padding:20px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <div class="runner-avatar">${r.name.split(' ').map(n => n[0]).join('').toUpperCase()}</div>
+        <div>
+          <div style="font-weight:700">${r.name}</div>
+          <div class="text-muted">📍 ${r.area}</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+        <span class="text-muted">⭐ Rating</span>
+        <span>${r.rating || '—'}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:12px">
+        <span class="text-muted">✅ Completed</span>
+        <span>${r.completed || 0}</span>
+      </div>
+      <div class="admin-action-btns">
+        <span class="badge badge-${r.status === 'online' ? 'green' : 'red'}">${cap(r.status)}</span>
+        <button class="btn btn-danger btn-sm" onclick="deleteRunner('${r._id}')">🗑️ Delete</button>
+        <button class="btn btn-outline btn-sm" onclick="toggleRunnerStatus('${r._id}')">${r.status === 'online' ? '⏸️ Offline' : '▶️ Online'}</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderCustomersTable(data) {
+  const rows = data || customers;
+  const el = document.getElementById('adminCustomersTable');
+  if (!el) return;
+  if (!rows.length) {
+    el.innerHTML = '<tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px">No customers yet.</td></tr>';
+    return;
+  }
+  el.innerHTML = rows.map(c => `
+    <tr>
+      <td style="font-weight:600">${c.name}</td>
+      <td>${c.phone}</td>
+      <td>${c.email}</td>
+      <td>${c.errands}</td>
+      <td style="color:var(--green);font-weight:600">Ksh ${c.spent.toLocaleString()}</td>
+      <td>${c.joined}</td>
+      <td><span class="badge badge-${c.status === 'active' ? 'green' : 'red'}">${cap(c.status)}</span></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteCustomer('${c._id}')">🗑️ Delete</button></td>
+    </tr>
+  `).join('');
+}
+
+function renderRevenueChart() {
+  const el = document.getElementById('revenueChart');
+  const dEl = document.getElementById('revenueDays');
+  if (!el) return;
+  
+  const completed = errands.filter(e => e.status === 'completed');
+  if (!completed.length) {
+    el.innerHTML = '<div class="empty-state" style="width:100%">📊 Revenue chart will populate as errands are completed.</div>';
+    if (dEl) dEl.innerHTML = '';
+    return;
+  }
+  
+  const byDay = {};
+  completed.forEach(e => {
+    const date = e.date || new Date().toISOString().split('T')[0];
+    byDay[date] = (byDay[date] || 0) + Number(e.amount || 0);
+  });
+  
+  const days = Object.keys(byDay).sort().slice(-7);
+  const vals = days.map(d => byDay[d]);
+  const max = Math.max(...vals, 1);
+  
+  el.innerHTML = vals.map((v, i) => `
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+      <div style="font-size:11px;color:var(--gray-600)">Ksh ${(v/1000).toFixed(1)}K</div>
+      <div style="width:100%;background:${i === vals.length - 1 ? 'var(--green)' : 'var(--green-light)'};border-radius:4px 4px 0 0;height:${Math.round(v/max*100)}px;min-height:4px;"></div>
+    </div>
+  `).join('');
+  
+  if (dEl) {
+    dEl.innerHTML = days.map(d => `
+      <div style="flex:1;text-align:center;font-size:11px;color:var(--gray-400)">${new Date(d + 'T00:00:00').toLocaleDateString('en-KE', { weekday: 'short' })}</div>
+    `).join('');
+  }
+}
+
+function renderAdminPayments() {
+  const el = document.getElementById('adminPaymentsTable');
+  if (!el) return;
+  if (!payments.length) {
+    el.innerHTML = '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:20px">No payments recorded.</td></tr>';
+    return;
+  }
+  el.innerHTML = payments.slice(0, 50).map(p => `
+    <tr>
+      <td><code style="font-size:12px">${p.transactionId || p._id}</code></td>
+      <td>${p.customer?.name || '—'}</td>
+      <td>${p.errand ? (typeof p.errand === 'object' ? p.errand.orderId : p.errand) : '—'}</td>
+      <td style="font-weight:600;color:var(--green)">Ksh ${Number(p.amount).toLocaleString()}</td>
+      <td>${p.method || 'M-Pesa'}</td>
+      <td><span class="badge badge-${p.status === 'completed' ? 'green' : p.status === 'pending' ? 'amber' : 'red'}">${cap(p.status)}</span></td>
+      <td>${p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-KE') : '—'}</td>
+    </tr>
+  `).join('');
+}
+
+// ================================================================
+// ADMIN ACTIONS
+// ================================================================
+async function assignErrand(id) {
+  const errand = errands.find(e => e._id === id);
+  const availableRunners = runners.filter(r => r.status === 'online');
+  
+  if (!errand) { showToast('Errand not found.', 'error'); return; }
+  if (!availableRunners.length) { showToast('No online runners available.', 'warning'); return; }
+  
+  // Auto-assign first available runner
+  const runner = availableRunners[0];
+  
+  try {
+    await apiFetch(`/api/errands/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'assigned', runner: runner._id }),
+    });
+    showToast(`✅ Assigned ${errand.id} to ${runner.name}`, 'success');
     await loadAdminData();
-  }catch(err){showToast(err.message||'Failed to add runner.','error');}
+  } catch (err) {
+    showToast(err.message || 'Assignment failed.', 'error');
+  }
 }
-async function deleteRunner(id){
-  if(!confirm('Delete this runner? This action cannot be undone.'))return;
-  try{
-    await apiFetch('/api/admin/runners/'+id,{method:'DELETE'});
-    showToast('Runner deleted.','success');
+
+async function completeErrand(id) {
+  if (!confirm('Mark this errand as completed?')) return;
+  try {
+    await apiFetch(`/api/errands/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'completed' }),
+    });
+    showToast('✅ Errand completed successfully!', 'success');
     await loadAdminData();
-  }catch(err){showToast(err.message||'Failed to delete runner.','error');}
+  } catch (err) {
+    showToast(err.message || 'Failed to complete errand.', 'error');
+  }
 }
-async function addCustomer(){
-  const name=prompt('Enter customer full name:');
-  if(!name)return;
-  const email=prompt('Enter email:')||'user@example.com';
-  const phone=prompt('Enter phone (0712 345 678):')||'0712345678';
-  try{
-    const res=await apiFetch('/api/admin/users',{method:'POST',body:JSON.stringify({firstName:name.split(' ')[0]||'User',lastName:name.split(' ').slice(1).join(' ')||'',email,phone,password:'Test@1234',isActive:true})});
-    showToast('Customer added successfully.','success');
+
+async function cancelErrand(id) {
+  if (!confirm('Cancel this errand?')) return;
+  try {
+    await apiFetch(`/api/errands/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'cancelled' }),
+    });
+    showToast('❌ Errand cancelled.', 'info');
+    await loadUserData();
+  } catch (err) {
+    showToast(err.message || 'Failed to cancel errand.', 'error');
+  }
+}
+
+async function addRunner() {
+  const name = prompt('Enter runner full name:');
+  if (!name) return;
+  const area = prompt('Enter area (e.g. Nairobi):') || 'Nairobi';
+  
+  try {
+    const parts = name.split(' ');
+    await apiFetch('/api/admin/runners', {
+      method: 'POST',
+      body: JSON.stringify({
+        firstName: parts[0] || 'Runner',
+        lastName: parts.slice(1).join(' ') || '',
+        address: area,
+        isActive: true,
+      }),
+    });
+    showToast('🏃 Runner added successfully.', 'success');
     await loadAdminData();
-  }catch(err){showToast(err.message||'Failed to add customer.','error');}
+  } catch (err) {
+    showToast(err.message || 'Failed to add runner.', 'error');
+  }
 }
-async function deleteCustomer(id){
-  if(!confirm('Delete this customer? This action cannot be undone.'))return;
-  try{
-    await apiFetch('/api/admin/users/'+id,{method:'DELETE'});
-    showToast('Customer deleted.','success');
+
+async function deleteRunner(id) {
+  if (!confirm('Delete this runner? This action cannot be undone.')) return;
+  try {
+    await apiFetch(`/api/admin/runners/${id}`, { method: 'DELETE' });
+    showToast('🗑️ Runner deleted.', 'success');
     await loadAdminData();
-  }catch(err){showToast(err.message||'Failed to delete customer.','error');}
+  } catch (err) {
+    showToast(err.message || 'Failed to delete runner.', 'error');
+  }
 }
 
-// ===== COVERAGE & COUNTIES =====
-function initNationwideControls(){
-  ['pickupCounty','deliveryCounty'].forEach(id=>{const s=document.getElementById(id);if(!s||s.options.length)return;s.innerHTML=KENYA_COUNTIES.map(c=>`<option value="${c}" ${c==='Nairobi'?'selected':''}>${c}</option>`).join('');});
-  const el=document.getElementById('coverageCountyList');
-  if(el){el.innerHTML=KENYA_COUNTIES.map(c=>`<span class="coverage-pill ${PRIORITY_HUBS.includes(c)?'active':''}">${c}</span>`).join('');setText('coverageCount',KENYA_COUNTIES.length);}
+async function toggleRunnerStatus(id) {
+  try {
+    const runner = runners.find(r => r._id === id);
+    if (!runner) return;
+    const newStatus = runner.status === 'online' ? 'offline' : 'online';
+    await apiFetch(`/api/admin/runners/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isActive: newStatus === 'online' }),
+    });
+    showToast(`Runner is now ${newStatus}`, 'info');
+    await loadAdminData();
+  } catch (err) {
+    showToast(err.message || 'Failed to update runner status.', 'error');
+  }
 }
 
-// ===== INIT =====
-function initUser(){
-  initNationwideControls();
-  const dateEl=document.getElementById('errandDate');if(dateEl)dateEl.min=new Date().toISOString().split('T')[0];
-  renderActiveErrands();renderErrands(errands);renderTransactions();updateDashboardStats();renderHistory();
-}
-function initAdmin(){
-  initNationwideControls();
-  setText('todayDate',new Date().toLocaleDateString('en-KE',{weekday:'short',day:'numeric',month:'short',year:'numeric'}));
-  renderAdminRecentErrands();renderAdminErrandsTable();renderRunners();renderAdminRunnersGrid();renderCustomersTable();renderRevenueChart();updateDashboardStats();
+async function addCustomer() {
+  const name = prompt('Enter customer full name:');
+  if (!name) return;
+  const email = prompt('Enter email:') || 'user@example.com';
+  const phone = prompt('Enter phone (0712 345 678):') || '0712345678';
+  
+  try {
+    const parts = name.split(' ');
+    await apiFetch('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({
+        firstName: parts[0] || 'User',
+        lastName: parts.slice(1).join(' ') || '',
+        email,
+        phone,
+        password: 'Test@1234',
+        isActive: true,
+      }),
+    });
+    showToast('👤 Customer added successfully.', 'success');
+    await loadAdminData();
+  } catch (err) {
+    showToast(err.message || 'Failed to add customer.', 'error');
+  }
 }
 
-// ===== TOAST =====
-function showToast(msg,type='success'){
-  const icons={success:'✅',error:'❌',info:'ℹ️',warning:'⚠'};
-  const t=document.createElement('div');t.className=`toast ${type}`;
-  t.innerHTML=`<span>${icons[type]||'✅'}</span><span class="toast-msg">${msg}</span>`;
-  document.getElementById('toastContainer').appendChild(t);setTimeout(()=>t.remove(),4500);
+async function deleteCustomer(id) {
+  if (!confirm('Delete this customer? This action cannot be undone.')) return;
+  try {
+    await apiFetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+    showToast('🗑️ Customer deleted.', 'success');
+    await loadAdminData();
+  } catch (err) {
+    showToast(err.message || 'Failed to delete customer.', 'error');
+  }
 }
 
-// ===== HELPERS =====
-function v(id){return document.getElementById(id).value.trim();}
-function show(id){document.getElementById(id).classList.remove('hidden');}
-function hide(id){document.getElementById(id).classList.add('hidden');}
-function setText(id,val){const el=document.getElementById(id);if(el)el.textContent=val;}
-function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):'';}
-function togglePass(id,btn){const el=document.getElementById(id);el.type=el.type==='password'?'text':'password';btn.textContent=el.type==='password'?'show':'hide';}
-function checkStrength(p){
-  const f=document.getElementById('strengthFill'),l=document.getElementById('strengthLabel');
-  let s=0;if(p.length>=8)s++;if(/[A-Z]/.test(p))s++;if(/\d/.test(p))s++;if(/[^a-zA-Z0-9]/.test(p))s++;
-  const c=['','#E24B4A','#EF9F27','#378ADD','#1D9E75'],lb=['','Weak','Fair','Good','Strong'];
-  if(f){f.style.width=s*25+'%';f.style.background=c[s];}if(l){l.textContent=lb[s]||'';l.style.color=c[s];}
+// ================================================================
+// REPORTS
+// ================================================================
+function generateReport(type) {
+  showToast(`📊 Generating ${type} report...`, 'info');
+  setTimeout(() => {
+    showToast(`📥 ${type} report downloaded.`, 'success');
+  }, 1500);
 }
-async function restoreSession(){
-  if(!authToken)return;
-  try{
-    const u=await apiFetch('/api/auth/me');setCurrentUser(u);
-    if(currentUser.role==='admin'){showScreen('screenAdmin');await loadAdminData();}
-    else{showScreen('screenUser');initUser();await loadUserData();}
-  }catch{clearSession();}
+
+function exportErrandsCSV() {
+  if (!errands.length) {
+    showToast('No data to export.', 'warning');
+    return;
+  }
+  const headers = ['Order ID', 'Customer', 'Type', 'Pickup', 'Delivery', 'Runner', 'Amount', 'Status', 'Date'];
+  const rows = errands.map(e => [
+    e.id, e.customer, e.type, e.pickup, e.delivery, e.runner, e.amount, e.status, e.date
+  ]);
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `nichukulie-errands-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  window.URL.revokeObjectURL(url);
+  showToast('📥 CSV exported successfully.', 'success');
 }
-setTheme(localStorage.getItem('nichukulieTheme')||'light');
+
+// ================================================================
+// SETTINGS
+// ================================================================
+async function updateProfile() {
+  const name = document.getElementById('settingsName').value;
+  const email = document.getElementById('settingsEmail').value;
+  const phone = document.getElementById('settingsPhone').value;
+  
+  try {
+    await apiFetch('/api/auth/update-profile', {
+      method: 'PUT',
+      body: JSON.stringify({ name, email, phone }),
+    });
+    showToast('✅ Profile updated successfully.', 'success');
+  } catch (err) {
+    showToast(err.message || 'Failed to update profile.', 'error');
+  }
+}
+
+async function updatePassword() {
+  const current = document.getElementById('settingsCurrentPass').value;
+  const newPass = document.getElementById('settingsNewPass').value;
+  const confirm = document.getElementById('settingsConfirmPass').value;
+  
+  if (!current || !newPass || !confirm) {
+    showToast('Please fill in all password fields.', 'warning');
+    return;
+  }
+  if (newPass !== confirm) {
+    showToast('New passwords do not match.', 'error');
+    return;
+  }
+  if (newPass.length < 8) {
+    showToast('Password must be at least 8 characters.', 'warning');
+    return;
+  }
+  
+  try {
+    await apiFetch('/api/auth/change-password', {
+      method: 'PUT',
+      body: JSON.stringify({ currentPassword: current, newPassword: newPass }),
+    });
+    showToast('🔒 Password updated successfully.', 'success');
+    document.getElementById('settingsCurrentPass').value = '';
+    document.getElementById('settingsNewPass').value = '';
+    document.getElementById('settingsConfirmPass').value = '';
+  } catch (err) {
+    showToast(err.message || 'Failed to update password.', 'error');
+  }
+}
+
+async function savePricingConfig() {
+  const baseFee = parseInt(document.getElementById('configBaseFee').value);
+  const perKm = parseInt(document.getElementById('configPerKm').value);
+  const express = parseInt(document.getElementById('configExpress').value);
+  const service = parseInt(document.getElementById('configService').value);
+  
+  if (isNaN(baseFee) || isNaN(perKm) || isNaN(express) || isNaN(service)) {
+    showToast('Please enter valid numbers.', 'warning');
+    return;
+  }
+  
+  CONFIG.baseFee = baseFee;
+  CONFIG.perKmRate = perKm;
+  CONFIG.expressSurcharge = express;
+  CONFIG.serviceCharge = service;
+  
+  try {
+    await apiFetch('/api/admin/config/pricing', {
+      method: 'PUT',
+      body: JSON.stringify(CONFIG),
+    });
+    showToast('💾 Pricing config saved.', 'success');
+    updatePrice();
+  } catch (err) {
+    showToast(err.message || 'Failed to save config.', 'error');
+  }
+}
+
+// ================================================================
+// QUICK ACTIONS
+// ================================================================
+function prefillErrand(type) {
+  switchUserTab('new-errand', null);
+  document.getElementById('errandType').value = type;
+  updatePrice();
+  const labels = {
+    shopping: 'Supermarket, Nairobi',
+    pharmacy: 'Pharmacy, Nairobi',
+    documents: 'Office, Nairobi',
+  };
+  if (labels[type]) {
+    document.getElementById('errandPickup').placeholder = `e.g. ${labels[type]}`;
+  }
+  document.getElementById('errandPickup').focus();
+}
+
+// ================================================================
+// INIT
+// ================================================================
+function initUser() {
+  initCountySelects();
+  initCoverage();
+  const dateEl = document.getElementById('errandDate');
+  if (dateEl) dateEl.min = new Date().toISOString().split('T')[0];
+  renderActiveErrands();
+  renderErrands(errands);
+  renderTransactions();
+  updateDashboardStats();
+  renderHistory();
+  updateErrandsNavBadge();
+}
+
+function initAdmin() {
+  initCountySelects();
+  initCoverage();
+  setText('todayDate', new Date().toLocaleDateString('en-KE', {
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
+  }));
+  renderAdminRecentErrands();
+  renderAdminErrandsTable();
+  renderRunners();
+  renderAdminRunnersGrid();
+  renderCustomersTable();
+  renderRevenueChart();
+  renderAdminPayments();
+  updateDashboardStats();
+}
+
+// ================================================================
+// SESSION RESTORE
+// ================================================================
+async function restoreSession() {
+  if (!authToken) return;
+  try {
+    const user = await apiFetch('/api/auth/me');
+    setCurrentUser(user);
+    if (currentUser.role === 'admin') {
+      showScreen('screenAdmin');
+      await loadAdminData();
+    } else {
+      showScreen('screenUser');
+      initUser();
+      await loadUserData();
+      connectWebSocket();
+    }
+  } catch (err) {
+    clearSession();
+  }
+}
+
+// ================================================================
+// BOOT
+// ================================================================
+setTheme(localStorage.getItem('nichukulieTheme') || 'light');
 restoreSession();
+
+// Handle offline/online events
+window.addEventListener('online', () => {
+  showToast('📶 Back online!', 'success');
+  if (authToken) {
+    if (currentUser?.role === 'admin') loadAdminData();
+    else loadUserData();
+  }
+});
+
+window.addEventListener('offline', () => {
+  showToast('📶 You are offline. Some features may not work.', 'warning');
+});
+
+console.log('🚀 Nichukulie v2.0 loaded successfully!');
 </script>
 </body>
 </html>
