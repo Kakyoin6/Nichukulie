@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
-  <title>Nichukulie — Email Integration</title>
+  <title>Nichukulie — Customer Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
   <style>
     /* ----- ROOT & THEME ----- */
@@ -54,7 +54,7 @@
     .badge-purple { background: #E8E0F0; color: #4A2B6B; }
     .screen { display: none; } .screen.active { display: block; }
 
-    /* ----- AUTH (mobile first) ----- */
+    /* ----- AUTH (mobile first, no pre-filled values) ----- */
     .auth-wrap {
       min-height: 100vh;
       display: flex;
@@ -359,40 +359,14 @@
     @keyframes toastIn { from { transform: translateX(60px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     .floating-help { position: fixed; right: 16px; bottom: 16px; z-index: 120; background: var(--gray-800); color: var(--white); border-radius: var(--radius-sm); padding: 8px 14px; cursor: pointer; font-weight: 600; font-size: 13px; border: none; }
     .admin-chip { background: #26215C; color: #CECBF6; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 20px; margin-left: 6px; }
-    
-    /* Email specific styles */
-    .email-template-preview {
-      background: var(--gray-50);
-      border-radius: var(--radius-sm);
-      padding: 16px;
-      font-family: 'Courier New', monospace;
-      font-size: 13px;
-      white-space: pre-wrap;
-      max-height: 300px;
-      overflow-y: auto;
-      border: 1px solid var(--gray-200);
-    }
-    .email-log-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--gray-100);
-    }
-    .email-log-item:last-child { border-bottom: none; }
-    .email-icon { font-size: 20px; margin-right: 10px; }
-    .email-status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 10px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-    .email-status-badge.sent { background: var(--green-light); color: var(--green-dark); }
-    .email-status-badge.failed { background: var(--red-light); color: #791F1F; }
-    .email-status-badge.pending { background: var(--amber-light); color: #633806; }
+    .errand-card { background: var(--white); border-radius: var(--radius-md); border: 1px solid var(--gray-100); padding: 16px; margin-bottom: 12px; }
+    .errand-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
+    .errand-type { font-size: 16px; font-weight: 700; color: var(--gray-800); }
+    .errand-id { font-size: 12px; color: var(--gray-400); margin-top: 2px; }
+    .errand-detail { font-size: 13px; color: var(--gray-600); margin-bottom: 4px; }
+    .errand-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--gray-100); flex-wrap: wrap; gap: 8px; }
+    .errand-price { font-family: var(--font-head); font-size: 18px; font-weight: 700; color: var(--green); }
+    .dashboard-hero { background: var(--green-dark); border-radius: var(--radius-lg); padding: 24px; color: #fff; margin-bottom: 24px; }
 
     @media (max-width: 900px) {
       .stats-grid { grid-template-columns: repeat(2,1fr); }
@@ -517,6 +491,234 @@
   </div>
 </div>
 
+<!-- ===== CUSTOMER DASHBOARD ===== -->
+<div class="screen" id="screenUser">
+  <div class="app-layout">
+    <aside class="sidebar" id="userSidebar">
+      <div class="sidebar-logo">
+        <span>nichu<span>kulie</span></span>
+        <button class="hamburger" onclick="document.getElementById('userSidebar').classList.toggle('open')" style="display:block;background:transparent;border:none;font-size:24px;cursor:pointer;color:var(--gray-800);">✕</button>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Main</div>
+        <div class="nav-item active" onclick="switchUserTab('dashboard',this)">📊 Dashboard</div>
+        <div class="nav-item" onclick="switchUserTab('new-errand',this)">➕ New Errand</div>
+        <div class="nav-item" onclick="switchUserTab('my-errands',this)">📦 My Errands <span class="nav-badge" id="errandsNavBadge" style="display:none">0</span></div>
+        <div class="nav-item" onclick="switchUserTab('track',this)">📍 Track Order</div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Account</div>
+        <div class="nav-item" onclick="switchUserTab('wallet',this)">💰 Wallet</div>
+        <div class="nav-item" onclick="switchUserTab('history',this)">📜 History</div>
+        <div class="nav-item" onclick="switchUserTab('settings',this)">⚙️ Settings</div>
+      </div>
+      <div class="sidebar-user">
+        <div class="user-avatar" id="userAvatarSidebar">👤</div>
+        <div class="user-info">
+          <div class="user-name" id="userNameSidebar">Customer</div>
+          <div class="user-role">Customer</div>
+        </div>
+        <span class="logout-btn" onclick="logout()">Exit</span>
+      </div>
+    </aside>
+    <main class="main-content">
+      <!-- Dashboard -->
+      <div id="userTab-dashboard">
+        <div class="topbar">
+          <div class="page-title">Dashboard</div>
+          <div class="topbar-actions">
+            <button class="hamburger" onclick="document.getElementById('userSidebar').classList.toggle('open')" style="display:block;background:transparent;border:none;font-size:24px;cursor:pointer;color:var(--gray-800);">☰</button>
+            <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">☾</button>
+            <button class="btn btn-primary btn-sm" onclick="switchUserTab('new-errand',null)">+ New</button>
+          </div>
+        </div>
+        <div class="content-area">
+          <div class="dashboard-hero">
+            <h1 style="font-family:var(--font-head);font-size:22px;font-weight:700;margin-bottom:8px;">Welcome back, <span id="greetName">Customer</span>! 👋</h1>
+            <p style="color:rgba(255,255,255,.7);font-size:14px;margin-bottom:16px;">Book a runner, track your errands, and manage payments all in one place.</p>
+            <div style="display:flex;flex-wrap:wrap;gap:10px;">
+              <button class="btn" style="background:#FAC775;color:#085041;font-weight:700;border:none;padding:10px 20px;" onclick="switchUserTab('new-errand',null)">📦 Book an errand</button>
+              <button class="btn" style="background:transparent;border:1.5px solid rgba(255,255,255,.3);color:#fff;padding:10px 20px;" onclick="switchUserTab('track',null)">📍 Track order</button>
+            </div>
+          </div>
+          
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value" id="statTotalErrands">0</div>
+              <div class="stat-label">Total Errands</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="statActiveErrands">0</div>
+              <div class="stat-label">Active</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="statCompletedErrands">0</div>
+              <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="statTotalSpent">Ksh 0</div>
+              <div class="stat-label">Total Spent</div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:20px;">
+            <div class="card-header">
+              <div class="card-title">🔄 Active Errands</div>
+              <button class="btn btn-outline btn-sm" onclick="switchUserTab('my-errands',null)">View all</button>
+            </div>
+            <div class="card-body" id="activeErrandsList">
+              <div class="empty-state">No active errands. Book one now!</div>
+            </div>
+          </div>
+
+          <div class="grid-3">
+            <div class="card" style="padding:16px;cursor:pointer;text-align:center;" onclick="showToast('Quick book feature coming soon!','info')">
+              <div style="font-size:32px;">🛒</div>
+              <div style="font-weight:600;font-size:14px;margin-top:4px;">Shopping</div>
+              <div class="text-muted" style="font-size:12px;">Supermarket & shops</div>
+            </div>
+            <div class="card" style="padding:16px;cursor:pointer;text-align:center;" onclick="showToast('Quick book feature coming soon!','info')">
+              <div style="font-size:32px;">💊</div>
+              <div style="font-weight:600;font-size:14px;margin-top:4px;">Pharmacy</div>
+              <div class="text-muted" style="font-size:12px;">Medicine pickup</div>
+            </div>
+            <div class="card" style="padding:16px;cursor:pointer;text-align:center;" onclick="showToast('Quick book feature coming soon!','info')">
+              <div style="font-size:32px;">📄</div>
+              <div style="font-weight:600;font-size:14px;margin-top:4px;">Documents</div>
+              <div class="text-muted" style="font-size:12px;">Pickup & delivery</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- New Errand -->
+      <div id="userTab-new-errand" class="hidden">
+        <div class="topbar"><div class="page-title">📦 Book an Errand</div></div>
+        <div class="content-area">
+          <div class="card" style="max-width:600px;margin:0 auto;">
+            <div class="card-header"><div class="card-title">Errand Details</div></div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Errand Type</label>
+                <select class="form-input" id="errandType">
+                  <option value="shopping">Shopping</option>
+                  <option value="pharmacy">Pharmacy</option>
+                  <option value="documents">Documents</option>
+                  <option value="package">Package</option>
+                  <option value="food">Food</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Pickup Location</label>
+                <input type="text" class="form-input" id="pickupLocation" placeholder="e.g. Westlands Mall" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Delivery Location</label>
+                <input type="text" class="form-input" id="deliveryLocation" placeholder="e.g. Kilimani" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Notes (Optional)</label>
+                <textarea class="form-input" id="errandNotes" rows="3" placeholder="Any special instructions..."></textarea>
+              </div>
+              <button class="btn btn-primary btn-block" onclick="bookErrand()">📤 Book & Pay via M-Pesa</button>
+              <div style="text-align:center;font-size:12px;color:var(--gray-400);margin-top:8px;">Secured by M-Pesa STK Push</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- My Errands -->
+      <div id="userTab-my-errands" class="hidden">
+        <div class="topbar"><div class="page-title">📦 My Errands</div></div>
+        <div class="content-area">
+          <div class="tabs" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+            <button class="btn btn-sm btn-primary" onclick="filterErrands('all')">All</button>
+            <button class="btn btn-sm btn-outline" onclick="filterErrands('active')">Active</button>
+            <button class="btn btn-sm btn-outline" onclick="filterErrands('pending')">Pending</button>
+            <button class="btn btn-sm btn-outline" onclick="filterErrands('completed')">Completed</button>
+            <button class="btn btn-sm btn-outline" onclick="filterErrands('cancelled')">Cancelled</button>
+          </div>
+          <div id="errandsList"></div>
+        </div>
+      </div>
+
+      <!-- Track -->
+      <div id="userTab-track" class="hidden">
+        <div class="topbar"><div class="page-title">📍 Track Order</div></div>
+        <div class="content-area">
+          <div class="card" style="max-width:500px;margin:0 auto;">
+            <div class="card-header"><div class="card-title">Track Your Errand</div></div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Order ID</label>
+                <input type="text" class="form-input" id="trackOrderId" placeholder="NCK-12345678" />
+              </div>
+              <button class="btn btn-primary btn-block" onclick="trackOrder()">🔍 Track Order</button>
+              <div id="trackResult" class="hidden" style="margin-top:16px;">
+                <div id="trackDetails"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Wallet -->
+      <div id="userTab-wallet" class="hidden">
+        <div class="topbar"><div class="page-title">💰 Wallet</div></div>
+        <div class="content-area">
+          <div class="card" style="background:var(--green-dark);border:none;color:#fff;margin-bottom:20px;">
+            <div class="card-body">
+              <div style="font-size:13px;opacity:.7;">M-Pesa Number</div>
+              <div style="font-family:var(--font-head);font-size:22px;font-weight:700;" id="walletPhone">+254 712 345 678</div>
+              <div style="font-size:13px;opacity:.6;margin-top:6px;">Payments via Safaricom STK Push</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Transaction History</div></div>
+            <div class="card-body" id="transactionHistory">
+              <div class="empty-state">No transactions yet.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- History -->
+      <div id="userTab-history" class="hidden">
+        <div class="topbar"><div class="page-title">📜 Errand History</div></div>
+        <div class="content-area">
+          <div id="historyList"></div>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div id="userTab-settings" class="hidden">
+        <div class="topbar"><div class="page-title">⚙️ Settings</div></div>
+        <div class="content-area">
+          <div class="card" style="max-width:600px;margin:0 auto;">
+            <div class="card-header"><div class="card-title">Profile Settings</div></div>
+            <div class="card-body">
+              <div class="form-group">
+                <label class="form-label">Full Name</label>
+                <input type="text" class="form-input" id="settingsName" value="Customer Name" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-input" id="settingsEmail" value="customer@example.com" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Phone (M-Pesa)</label>
+                <input type="tel" class="form-input" id="settingsPhone" value="0712345678" />
+              </div>
+              <button class="btn btn-primary" onclick="showToast('Profile updated successfully!','success')">Save Changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
 <!-- ===== ADMIN DASHBOARD ===== -->
 <div class="screen" id="screenAdmin">
   <div class="app-layout">
@@ -527,10 +729,10 @@
       </div>
       <div class="sidebar-section">
         <div class="sidebar-section-label">Operations</div>
-        <div class="nav-item active" onclick="switchAdminTab('admin-dashboard',this)">Overview</div>
+        <div class="nav-item active" onclick="switchAdminTab('admin-dashboard',this)">📊 Overview</div>
+        <div class="nav-item" onclick="switchAdminTab('admin-runners',this)">🏃 Runners</div>
+        <div class="nav-item" onclick="switchAdminTab('admin-customers',this)">👤 Customers</div>
         <div class="nav-item" onclick="switchAdminTab('admin-email',this)">📧 Email</div>
-        <div class="nav-item" onclick="switchAdminTab('admin-runners',this)">Runners</div>
-        <div class="nav-item" onclick="switchAdminTab('admin-customers',this)">Customers</div>
       </div>
       <div class="sidebar-user">
         <div class="user-avatar" style="background:#26215C;color:#CECBF6" id="adminAvatarSidebar">AD</div>
@@ -539,10 +741,9 @@
       </div>
     </aside>
     <main class="main-content">
-      <!-- Overview -->
       <div id="adminTab-admin-dashboard">
         <div class="topbar">
-          <div class="page-title">Operations</div>
+          <div class="page-title">📊 Operations</div>
           <div class="topbar-actions">
             <button class="hamburger" onclick="document.getElementById('adminSidebar').classList.toggle('open')" style="display:block;background:transparent;border:none;font-size:24px;cursor:pointer;color:var(--gray-800);">☰</button>
             <button class="theme-toggle" onclick="toggleTheme()" id="adminThemeToggle">☾</button>
@@ -558,101 +759,39 @@
           </div>
           <div class="grid-2">
             <div class="card">
-              <div class="card-header"><div class="card-title">Recent Email Activity</div><span class="badge badge-purple">📧 Live</span></div>
-              <div class="card-body" id="emailLogPreview"></div>
+              <div class="card-header"><div class="card-title">🏃 Runners</div><button class="btn btn-primary btn-sm" onclick="addRunner()">+ Add</button></div>
+              <div class="card-body" id="adminRunnersList"></div>
             </div>
             <div class="card">
-              <div class="card-header"><div class="card-title">Quick Actions</div></div>
-              <div class="card-body">
-                <button class="btn btn-primary btn-block" onclick="sendTestEmail()" style="margin-bottom:8px;">📧 Send Test Email</button>
-                <button class="btn btn-outline btn-block" onclick="sendBulkEmail()">📨 Send Bulk Email</button>
-              </div>
+              <div class="card-header"><div class="card-title">👤 Customers</div><button class="btn btn-primary btn-sm" onclick="addCustomer()">+ Add</button></div>
+              <div class="card-body" id="adminCustomersList"></div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Email Management -->
-      <div id="adminTab-admin-email" class="hidden">
-        <div class="topbar">
-          <div class="page-title">📧 Email Management</div>
-          <div class="topbar-actions">
-            <button class="btn btn-primary btn-sm" onclick="sendTestEmail()">Send Test</button>
-            <button class="btn btn-outline btn-sm" onclick="sendBulkEmail()">Bulk Email</button>
-          </div>
-        </div>
-        <div class="content-area">
-          <div class="grid-2">
-            <div>
-              <div class="card" style="margin-bottom:16px;">
-                <div class="card-header"><div class="card-title">📝 Compose Email</div></div>
-                <div class="card-body">
-                  <div class="form-group">
-                    <label class="form-label">To</label>
-                    <input type="text" class="form-input" id="emailTo" placeholder="customer@example.com" />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Subject</label>
-                    <input type="text" class="form-input" id="emailSubject" placeholder="Your Nichukulie order update" />
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Template</label>
-                    <select class="form-input" id="emailTemplate" onchange="loadEmailTemplate()">
-                      <option value="order_confirmation">Order Confirmation</option>
-                      <option value="order_assigned">Runner Assigned</option>
-                      <option value="order_picked_up">Order Picked Up</option>
-                      <option value="order_delivered">Order Delivered</option>
-                      <option value="order_cancelled">Order Cancelled</option>
-                      <option value="promotional">Promotional</option>
-                      <option value="custom">Custom Email</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label class="form-label">Message</label>
-                    <textarea class="form-input" id="emailMessage" rows="8" style="min-height:150px;font-family:var(--font-body);"></textarea>
-                  </div>
-                  <button class="btn btn-primary btn-block" onclick="sendCustomEmail()">📤 Send Email</button>
-                </div>
-              </div>
-            </div>
-            <div>
-              <div class="card">
-                <div class="card-header"><div class="card-title">📋 Email Log</div></div>
-                <div class="card-body" id="emailLogFull" style="max-height:500px;overflow-y:auto;"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Runners -->
       <div id="adminTab-admin-runners" class="hidden">
-        <div class="topbar">
-          <div class="page-title">Runners</div>
-          <div class="topbar-actions">
-            <button class="btn btn-primary btn-sm" onclick="addRunner()">+ Add Runner</button>
-          </div>
-        </div>
+        <div class="topbar"><div class="page-title">🏃 Runners</div><div class="topbar-actions"><button class="btn btn-primary btn-sm" onclick="addRunner()">+ Add Runner</button></div></div>
+        <div class="content-area"><div class="grid-3" id="adminRunnersGrid"></div></div>
+      </div>
+
+      <div id="adminTab-admin-customers" class="hidden">
+        <div class="topbar"><div class="page-title">👤 Customers</div><div class="topbar-actions"><button class="btn btn-primary btn-sm" onclick="addCustomer()">+ Add Customer</button></div></div>
         <div class="content-area">
-          <div class="grid-3" id="adminRunnersGrid"></div>
+          <div class="card"><div class="table-wrap" style="overflow-x:auto;"><table class="data-table"><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Status</th><th>Action</th></tr></thead><tbody id="adminCustomersTable"></tbody></table></div></div>
         </div>
       </div>
 
-      <!-- Customers -->
-      <div id="adminTab-admin-customers" class="hidden">
-        <div class="topbar">
-          <div class="page-title">Customers</div>
-          <div class="topbar-actions">
-            <button class="btn btn-primary btn-sm" onclick="addCustomer()">+ Add Customer</button>
-          </div>
-        </div>
+      <div id="adminTab-admin-email" class="hidden">
+        <div class="topbar"><div class="page-title">📧 Email</div></div>
         <div class="content-area">
           <div class="card">
-            <div class="table-wrap" style="overflow-x:auto;">
-              <table class="data-table">
-                <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
-                <tbody id="adminCustomersTable"></tbody>
-              </table>
+            <div class="card-header"><div class="card-title">📝 Compose Email</div></div>
+            <div class="card-body">
+              <div class="form-group"><label class="form-label">To</label><input type="email" class="form-input" id="emailTo" placeholder="customer@example.com" /></div>
+              <div class="form-group"><label class="form-label">Subject</label><input type="text" class="form-input" id="emailSubject" placeholder="Email subject" /></div>
+              <div class="form-group"><label class="form-label">Message</label><textarea class="form-input" id="emailMessage" rows="6" style="min-height:120px;"></textarea></div>
+              <button class="btn btn-primary btn-block" onclick="sendCustomEmail()">📤 Send Email</button>
             </div>
           </div>
         </div>
@@ -664,260 +803,25 @@
 <script>
 // ===== STATE =====
 let currentUser = null;
+let customerErrands = [
+  { id: 'NCK-1001', type: 'Shopping', pickup: 'Westlands Mall', delivery: 'Kilimani', status: 'completed', amount: 450, date: '2026-07-20' },
+  { id: 'NCK-1002', type: 'Pharmacy', pickup: 'CBD Pharmacy', delivery: 'South B', status: 'active', amount: 280, date: '2026-07-25' },
+  { id: 'NCK-1003', type: 'Documents', pickup: 'Lavington', delivery: 'Karen', status: 'pending', amount: 350, date: '2026-07-26' }
+];
+
 let runners = [
   { id: 'r1', name: 'James Mwangi', phone: '0712345678', status: 'online', area: 'Nairobi', email: 'james@example.com' },
-  { id: 'r2', name: 'Sarah Akinyi', phone: '0722334455', status: 'online', area: 'Kiambu', email: 'sarah@example.com' },
-  { id: 'r3', name: 'David Ochieng', phone: '0733445566', status: 'offline', area: 'Nakuru', email: 'david@example.com' }
+  { id: 'r2', name: 'Sarah Akinyi', phone: '0722334455', status: 'online', area: 'Kiambu', email: 'sarah@example.com' }
 ];
 let customers = [
   { id: 'c1', name: 'Grace Wanjiru', phone: '0744556677', email: 'grace@example.com', status: 'active' },
-  { id: 'c2', name: 'Peter Kiprop', phone: '0755667788', email: 'peter@example.com', status: 'active' },
-  { id: 'c3', name: 'Faith Achieng', phone: '0766778899', email: 'faith@example.com', status: 'inactive' }
+  { id: 'c2', name: 'Peter Kiprop', phone: '0755667788', email: 'peter@example.com', status: 'active' }
 ];
-let errands = [
+let adminErrands = [
   { id: 'E001', type: 'Shopping', customer: 'Grace Wanjiru', status: 'completed', amount: 450 },
-  { id: 'E002', type: 'Pharmacy', customer: 'Peter Kiprop', status: 'active', amount: 280 },
-  { id: 'E003', type: 'Documents', customer: 'Faith Achieng', status: 'pending', amount: 350 }
+  { id: 'E002', type: 'Pharmacy', customer: 'Peter Kiprop', status: 'active', amount: 280 }
 ];
-
-// ===== EMAIL SYSTEM =====
-let emailLogs = [
-  { id: 'e1', to: 'grace@example.com', subject: 'Order E001 Delivered', status: 'sent', time: new Date(Date.now() - 1200000).toISOString() },
-  { id: 'e2', to: 'peter@example.com', subject: 'Runner Assigned - E002', status: 'sent', time: new Date(Date.now() - 600000).toISOString() },
-  { id: 'e3', to: 'faith@example.com', subject: 'Order E003 Confirmation', status: 'pending', time: new Date(Date.now() - 300000).toISOString() }
-];
-
-// Email templates
-const emailTemplates = {
-  order_confirmation: `Hi {{customer_name}},
-
-Your order #{{order_id}} has been confirmed! 🎉
-
-📦 Order Details:
-- Type: {{order_type}}
-- Pickup: {{pickup_location}}
-- Delivery: {{delivery_location}}
-- Amount: {{amount}}
-
-A runner will be assigned shortly. You'll receive updates via email.
-
-Thank you for choosing Nichukulie!
-
-Best regards,
-The Nichukulie Team`,
-  
-  order_assigned: `Hi {{customer_name}},
-
-Good news! A runner has been assigned to your order #{{order_id}}.
-
-🏃 Runner: {{runner_name}}
-📱 Contact: {{runner_phone}}
-
-Your order is being prepared for pickup. We'll notify you when it's on the way.
-
-Track your order: https://nichukulie.com/track/{{order_id}}
-
-Regards,
-Nichukulie Team`,
-
-  order_picked_up: `Hi {{customer_name}},
-
-Your order #{{order_id}} has been picked up! 🚀
-
-🏃 Runner: {{runner_name}} is on the way
-📍 From: {{pickup_location}}
-📍 To: {{delivery_location}}
-
-Estimated delivery: {{eta}}
-
-Track live: https://nichukulie.com/track/{{order_id}}
-
-Regards,
-Nichukulie Team`,
-
-  order_delivered: `Hi {{customer_name}},
-
-Your order #{{order_id}} has been delivered! ✅
-
-📦 Order: {{order_type}}
-⏱️ Delivery time: {{delivery_time}}
-💵 Amount: {{amount}}
-
-We hope you're satisfied with your experience. Please rate your runner:
-
-https://nichukulie.com/rate/{{order_id}}
-
-Thank you for using Nichukulie!
-
-Warm regards,
-Nichukulie Team`,
-
-  order_cancelled: `Hi {{customer_name}},
-
-Your order #{{order_id}} has been cancelled.
-
-If you have any questions or need assistance, please contact our support team.
-
-Regards,
-Nichukulie Team`,
-
-  promotional: `Hi {{customer_name}},
-
-Special offer just for you! 🎉
-
-Get 20% off your next errand with code: NICHU20
-
-Valid for 7 days. Book now at https://nichukulie.com
-
-Don't miss out!
-
-Nichukulie Team`
-};
-
-// ===== EMAIL FUNCTIONS =====
-function loadEmailTemplate() {
-  const template = document.getElementById('emailTemplate').value;
-  const msg = document.getElementById('emailMessage');
-  if (template === 'custom') {
-    msg.value = 'Write your custom message here...';
-    return;
-  }
-  // Use a sample customer for preview
-  const sample = {
-    customer_name: 'Customer Name',
-    order_id: 'E12345',
-    order_type: 'Shopping',
-    pickup_location: 'Westlands Mall',
-    delivery_location: 'Kilimani',
-    amount: 'Ksh 450',
-    runner_name: 'James Mwangi',
-    runner_phone: '0712345678',
-    eta: '30 minutes',
-    delivery_time: '2:30 PM'
-  };
-  let templateText = emailTemplates[template] || 'Template not found.';
-  Object.keys(sample).forEach(key => {
-    templateText = templateText.replace(new RegExp(`{{${key}}}`, 'g'), sample[key]);
-  });
-  msg.value = templateText;
-}
-
-function sendCustomEmail() {
-  const to = document.getElementById('emailTo').value.trim();
-  const subject = document.getElementById('emailSubject').value.trim();
-  const message = document.getElementById('emailMessage').value.trim();
-  
-  if (!to || !subject || !message) {
-    showToast('Please fill in all fields.', 'error');
-    return;
-  }
-  
-  // Simulate sending email
-  const log = {
-    id: 'e' + Date.now(),
-    to: to,
-    subject: subject,
-    status: 'sent',
-    time: new Date().toISOString()
-  };
-  emailLogs.unshift(log);
-  
-  showToast(`✅ Email sent to ${to}`, 'success');
-  renderEmailLogs();
-  updateEmailStats();
-  
-  // Clear form
-  document.getElementById('emailTo').value = '';
-  document.getElementById('emailSubject').value = '';
-  document.getElementById('emailMessage').value = '';
-}
-
-function sendTestEmail() {
-  const testEmails = ['test@nichukulie.com', 'demo@example.com'];
-  const subjects = ['Test Email - Nichukulie', 'Welcome to Nichukulie!', 'Your order is ready'];
-  
-  testEmails.forEach((email, index) => {
-    const log = {
-      id: 'e' + Date.now() + index,
-      to: email,
-      subject: subjects[index % subjects.length],
-      status: 'sent',
-      time: new Date().toISOString()
-    };
-    emailLogs.unshift(log);
-  });
-  
-  showToast(`📧 Test emails sent to ${testEmails.length} recipients`, 'success');
-  renderEmailLogs();
-  updateEmailStats();
-}
-
-function sendBulkEmail() {
-  const allEmails = [...customers.map(c => c.email), ...runners.map(r => r.email)].filter(e => e);
-  if (!allEmails.length) {
-    showToast('No email addresses found.', 'warning');
-    return;
-  }
-  
-  const subject = 'Nichukulie Update: Important Information';
-  const message = 'Dear customer,\n\nWe have important updates about our services. Please check your dashboard for more details.\n\nThank you for choosing Nichukulie.\n\nThe Nichukulie Team';
-  
-  allEmails.forEach(email => {
-    const log = {
-      id: 'e' + Date.now() + Math.random(),
-      to: email,
-      subject: subject,
-      status: Math.random() > 0.9 ? 'failed' : 'sent',
-      time: new Date().toISOString()
-    };
-    emailLogs.unshift(log);
-  });
-  
-  showToast(`📨 Bulk email sent to ${allEmails.length} recipients`, 'success');
-  renderEmailLogs();
-  updateEmailStats();
-}
-
-function renderEmailLogs() {
-  const preview = document.getElementById('emailLogPreview');
-  const full = document.getElementById('emailLogFull');
-  
-  const renderLogs = (logs, container, limit = 5) => {
-    const items = logs.slice(0, limit);
-    if (!items.length) {
-      container.innerHTML = '<div class="empty-state">No emails sent yet.</div>';
-      return;
-    }
-    container.innerHTML = items.map(log => `
-      <div class="email-log-item">
-        <div style="display:flex;align-items:center;flex:1;">
-          <span class="email-icon">${log.status === 'sent' ? '✅' : '❌'}</span>
-          <div style="flex:1;">
-            <div style="font-weight:600;font-size:13px;">${log.subject}</div>
-            <div style="font-size:12px;color:var(--gray-600);">To: ${log.to}</div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span class="email-status-badge ${log.status}">${log.status}</span>
-          <span style="font-size:11px;color:var(--gray-400);">${new Date(log.time).toLocaleTimeString()}</span>
-        </div>
-      </div>
-    `).join('');
-  };
-  
-  if (preview) renderLogs(emailLogs, preview, 3);
-  if (full) renderLogs(emailLogs, full, 100);
-}
-
-function updateEmailStats() {
-  const sent = emailLogs.filter(e => e.status === 'sent').length;
-  const failed = emailLogs.filter(e => e.status === 'failed').length;
-  const pending = emailLogs.filter(e => e.status === 'pending').length;
-  
-  // Update any email stats on dashboard
-  const stats = document.getElementById('emailStats');
-  // We'll add a small counter near the email nav
-}
+let emailLogs = [];
 
 // ===== HELPERS =====
 function showToast(msg, type = 'success') {
@@ -948,26 +852,52 @@ function checkStrength(p) {
 function setTheme(theme) { document.body.dataset.theme = theme; localStorage.setItem('nichukulieTheme', theme); document.querySelectorAll('#themeToggle,#adminThemeToggle').forEach(b => { if (b) b.textContent = theme === 'dark' ? '☀' : '☾'; }); }
 function toggleTheme() { setTheme(document.body.dataset.theme === 'dark' ? 'light' : 'dark'); }
 
-// ===== AUTH =====
+// ===== AUTH (SECURE - no pre-filled values) =====
 function handleLogin() {
   const email = document.getElementById('loginEmail').value.trim();
   const pass = document.getElementById('loginPass').value;
-  if (!email || !pass) { showToast('Please fill in all fields.', 'error'); return; }
+  
+  // Clear any previous errors
+  hide('loginEmailErr');
+  hide('loginPassErr');
+  
+  if (!email) { show('loginEmailErr'); return; }
+  if (!pass) { show('loginPassErr'); return; }
+  if (!email.includes('@')) { show('loginEmailErr'); return; }
+  
+  // Admin login
   if (email === 'admin@nichu.com' && pass === 'admin123') {
-    currentUser = { name: 'Admin', role: 'admin' };
+    currentUser = { name: 'Admin', role: 'admin', email: email };
     showScreen('screenAdmin');
     renderAdmin();
     showToast('Welcome Admin!', 'success');
+    // Clear fields for security
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPass').value = '';
     return;
   }
+  
+  // Customer login (any valid email with password length >= 4)
   if (email.includes('@') && pass.length >= 4) {
-    currentUser = { name: 'Customer', role: 'user' };
+    const name = email.split('@')[0];
+    currentUser = { 
+      name: name.charAt(0).toUpperCase() + name.slice(1), 
+      role: 'customer',
+      email: email,
+      phone: '0712345678'
+    };
     showScreen('screenUser');
-    showToast('Welcome back!', 'success');
+    renderCustomerDashboard();
+    showToast(`Welcome back, ${currentUser.name}!`, 'success');
+    // Clear fields for security
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPass').value = '';
     return;
   }
-  showToast('Invalid credentials. Try admin@nichu.com / admin123', 'error');
+  
+  showToast('Invalid credentials. Please try again.', 'error');
 }
+
 function handleRegister() {
   const first = document.getElementById('regFirst').value.trim();
   const last = document.getElementById('regLast').value.trim();
@@ -975,16 +905,274 @@ function handleRegister() {
   const phone = document.getElementById('regPhone').value.trim();
   const pass = document.getElementById('regPass').value;
   const conf = document.getElementById('regPassConf').value;
-  if (!first || !last || !email || !phone || pass.length < 8 || pass !== conf) {
-    showToast('Please fill all fields correctly.', 'error');
-    return;
-  }
-  showToast('Account created! You can now sign in.', 'success');
+  
+  // Clear errors
+  ['regFirstErr','regLastErr','regEmailErr','regPhoneErr','regPassErr','regPassConfErr'].forEach(id => hide(id));
+  
+  if (!first) { show('regFirstErr'); return; }
+  if (!last) { show('regLastErr'); return; }
+  if (!email || !email.includes('@')) { show('regEmailErr'); return; }
+  if (!phone || phone.length < 10) { show('regPhoneErr'); return; }
+  if (pass.length < 8) { show('regPassErr'); return; }
+  if (pass !== conf) { show('regPassConfErr'); return; }
+  
+  showToast('Account created successfully! Please sign in.', 'success');
+  document.getElementById('regFirst').value = '';
+  document.getElementById('regLast').value = '';
+  document.getElementById('regEmail').value = '';
+  document.getElementById('regPhone').value = '';
+  document.getElementById('regPass').value = '';
+  document.getElementById('regPassConf').value = '';
   showScreen('screenLogin');
 }
-function logout() { currentUser = null; showScreen('screenLogin'); showToast('Signed out.', 'info'); }
 
-// ===== ADMIN NAV =====
+function logout() {
+  currentUser = null;
+  showScreen('screenLogin');
+  showToast('Signed out successfully.', 'info');
+  // Clear any sensitive data
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPass').value = '';
+}
+
+// ===== CUSTOMER DASHBOARD =====
+function renderCustomerDashboard() {
+  if (!currentUser) return;
+  
+  // Set user info
+  setText('userNameSidebar', currentUser.name);
+  setText('greetName', currentUser.name);
+  document.getElementById('userAvatarSidebar').textContent = currentUser.name.charAt(0).toUpperCase();
+  setText('walletPhone', currentUser.phone || '+254 712 345 678');
+  
+  // Set settings
+  document.getElementById('settingsName').value = currentUser.name;
+  document.getElementById('settingsEmail').value = currentUser.email || '';
+  document.getElementById('settingsPhone').value = currentUser.phone || '0712345678';
+  
+  // Update stats
+  const total = customerErrands.length;
+  const active = customerErrands.filter(e => e.status === 'active' || e.status === 'pending').length;
+  const completed = customerErrands.filter(e => e.status === 'completed').length;
+  const spent = customerErrands.filter(e => e.status === 'completed').reduce((sum, e) => sum + e.amount, 0);
+  
+  setText('statTotalErrands', total);
+  setText('statActiveErrands', active);
+  setText('statCompletedErrands', completed);
+  setText('statTotalSpent', 'Ksh ' + spent);
+  
+  // Update badge
+  const badge = document.getElementById('errandsNavBadge');
+  if (badge) {
+    badge.textContent = active;
+    badge.style.display = active > 0 ? '' : 'none';
+  }
+  
+  renderActiveErrands();
+  renderErrandsList('all');
+  renderHistory();
+}
+
+function renderActiveErrands() {
+  const active = customerErrands.filter(e => e.status === 'active' || e.status === 'pending');
+  const el = document.getElementById('activeErrandsList');
+  if (!el) return;
+  
+  if (!active.length) {
+    el.innerHTML = '<div class="empty-state">No active errands. <a style="color:var(--green);cursor:pointer;font-weight:600;" onclick="switchUserTab(\'new-errand\',null)">Book one now</a></div>';
+    return;
+  }
+  
+  el.innerHTML = active.map(e => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--gray-100);">
+      <div>
+        <div style="font-weight:600;font-size:14px;">${e.type} — ${e.id}</div>
+        <div class="text-muted">${e.pickup} → ${e.delivery}</div>
+      </div>
+      <div style="text-align:right;">
+        <span class="badge badge-${e.status === 'active' ? 'green' : 'amber'}">${cap(e.status)}</span>
+        <div style="font-size:13px;color:var(--green);font-weight:700;margin-top:4px;">Ksh ${e.amount}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderErrandsList(filter) {
+  const el = document.getElementById('errandsList');
+  if (!el) return;
+  
+  let filtered = customerErrands;
+  if (filter !== 'all') {
+    filtered = customerErrands.filter(e => e.status === filter);
+  }
+  
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty-state">No errands found.</div>';
+    return;
+  }
+  
+  el.innerHTML = filtered.map(e => `
+    <div class="errand-card">
+      <div class="errand-card-header">
+        <div>
+          <div class="errand-type">${e.type}</div>
+          <div class="errand-id">${e.id}</div>
+        </div>
+        <span class="badge badge-${e.status === 'active' ? 'green' : e.status === 'pending' ? 'amber' : e.status === 'completed' ? 'blue' : 'red'}">${cap(e.status)}</span>
+      </div>
+      <div class="errand-detail">📍 ${e.pickup} → ${e.delivery}</div>
+      <div class="errand-detail">📅 ${e.date}</div>
+      <div class="errand-footer">
+        <div class="errand-price">Ksh ${e.amount}</div>
+        ${e.status === 'active' || e.status === 'pending' ? `<button class="btn btn-outline btn-sm" onclick="switchUserTab('track',null);document.getElementById('trackOrderId').value='${e.id}';trackOrder();">Track</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterErrands(filter) {
+  // Update button styles
+  document.querySelectorAll('#userTab-my-errands .btn').forEach(btn => {
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-outline');
+  });
+  // Find and highlight the clicked button
+  const buttons = document.querySelectorAll('#userTab-my-errands .btn');
+  const filterMap = { 'all': 0, 'active': 1, 'pending': 2, 'completed': 3, 'cancelled': 4 };
+  const idx = filterMap[filter] || 0;
+  if (buttons[idx]) {
+    buttons[idx].classList.remove('btn-outline');
+    buttons[idx].classList.add('btn-primary');
+  }
+  renderErrandsList(filter);
+}
+
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  if (!el) return;
+  
+  const completed = customerErrands.filter(e => e.status === 'completed' || e.status === 'cancelled');
+  if (!completed.length) {
+    el.innerHTML = '<div class="empty-state">No completed errands yet.</div>';
+    return;
+  }
+  
+  el.innerHTML = completed.map(e => `
+    <div class="errand-card">
+      <div class="errand-card-header">
+        <div>
+          <div class="errand-type">${e.type}</div>
+          <div class="errand-id">${e.id}</div>
+        </div>
+        <span class="badge badge-${e.status === 'completed' ? 'blue' : 'red'}">${cap(e.status)}</span>
+      </div>
+      <div class="errand-detail">📍 ${e.pickup} → ${e.delivery}</div>
+      <div class="errand-detail">📅 ${e.date}</div>
+      <div class="errand-footer">
+        <div class="errand-price">Ksh ${e.amount}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ===== CUSTOMER ACTIONS =====
+function bookErrand() {
+  const type = document.getElementById('errandType').value;
+  const pickup = document.getElementById('pickupLocation').value.trim();
+  const delivery = document.getElementById('deliveryLocation').value.trim();
+  const notes = document.getElementById('errandNotes').value.trim();
+  
+  if (!pickup || !delivery) {
+    showToast('Please enter pickup and delivery locations.', 'warning');
+    return;
+  }
+  
+  const newErrand = {
+    id: 'NCK-' + Date.now().toString().slice(-6),
+    type: cap(type),
+    pickup: pickup,
+    delivery: delivery,
+    status: 'pending',
+    amount: Math.floor(Math.random() * 400) + 200,
+    date: new Date().toISOString().split('T')[0]
+  };
+  
+  customerErrands.unshift(newErrand);
+  renderCustomerDashboard();
+  showToast(`✅ Errand ${newErrand.id} booked successfully!`, 'success');
+  
+  // Clear form
+  document.getElementById('pickupLocation').value = '';
+  document.getElementById('deliveryLocation').value = '';
+  document.getElementById('errandNotes').value = '';
+  
+  switchUserTab('my-errands', null);
+}
+
+function trackOrder() {
+  const orderId = document.getElementById('trackOrderId').value.trim();
+  if (!orderId) {
+    showToast('Please enter an order ID.', 'warning');
+    return;
+  }
+  
+  const errand = customerErrands.find(e => e.id === orderId);
+  const result = document.getElementById('trackResult');
+  const details = document.getElementById('trackDetails');
+  
+  if (!errand) {
+    result.classList.remove('hidden');
+    details.innerHTML = '<div class="empty-state">❌ Order not found. Please check the ID and try again.</div>';
+    return;
+  }
+  
+  result.classList.remove('hidden');
+  const statusEmoji = {
+    'pending': '⏳',
+    'active': '🚀',
+    'completed': '✅',
+    'cancelled': '❌'
+  };
+  
+  details.innerHTML = `
+    <div style="padding:16px;background:var(--gray-50);border-radius:var(--radius-sm);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div>
+          <div style="font-weight:700;font-size:18px;">${errand.type}</div>
+          <div class="text-muted">${errand.id}</div>
+        </div>
+        <span style="font-size:32px;">${statusEmoji[errand.status] || '📦'}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;">
+        <div><div class="text-muted" style="font-size:11px;">PICKUP</div><div style="font-weight:600;">${errand.pickup}</div></div>
+        <div><div class="text-muted" style="font-size:11px;">DELIVERY</div><div style="font-weight:600;">${errand.delivery}</div></div>
+        <div><div class="text-muted" style="font-size:11px;">STATUS</div><span class="badge badge-${errand.status === 'active' ? 'green' : errand.status === 'pending' ? 'amber' : errand.status === 'completed' ? 'blue' : 'red'}">${cap(errand.status)}</span></div>
+        <div><div class="text-muted" style="font-size:11px;">AMOUNT</div><div style="font-weight:700;color:var(--green);">Ksh ${errand.amount}</div></div>
+      </div>
+      <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--gray-200);">
+        <div class="text-muted" style="font-size:11px;">BOOKED ON</div>
+        <div style="font-weight:600;">${errand.date}</div>
+      </div>
+    </div>
+  `;
+}
+
+// ===== USER NAVIGATION =====
+function switchUserTab(tab, el) {
+  document.querySelectorAll('[id^="userTab-"]').forEach(t => t.classList.add('hidden'));
+  const target = document.getElementById('userTab-' + tab);
+  if (target) target.classList.remove('hidden');
+  
+  document.querySelectorAll('.screen#screenUser .nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  
+  // Refresh content when switching tabs
+  if (tab === 'my-errands') renderErrandsList('all');
+  if (tab === 'history') renderHistory();
+  if (tab === 'dashboard') renderCustomerDashboard();
+}
+
+// ===== ADMIN FUNCTIONS =====
 function switchAdminTab(tab, el) {
   document.querySelectorAll('[id^="adminTab-"]').forEach(t => t.classList.add('hidden'));
   document.getElementById('adminTab-' + tab)?.classList.remove('hidden');
@@ -992,25 +1180,19 @@ function switchAdminTab(tab, el) {
   if (el) el.classList.add('active');
   if (tab === 'admin-runners') renderRunnersFull();
   if (tab === 'admin-customers') renderCustomersFull();
-  if (tab === 'admin-email') renderEmailLogs();
 }
 
-// ===== RENDER ADMIN =====
 function renderAdmin() {
   setText('todayDate', new Date().toLocaleDateString('en-KE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }));
   setText('adminStatRunners', runners.length);
   setText('adminStatCustomers', customers.length);
-  setText('adminStatErrands', errands.length);
-  const rev = errands.filter(e => e.status === 'completed').reduce((s, e) => s + e.amount, 0);
+  setText('adminStatErrands', adminErrands.length);
+  const rev = adminErrands.filter(e => e.status === 'completed').reduce((s, e) => s + e.amount, 0);
   setText('adminStatRevenue', 'Ksh ' + rev);
   renderRunnersList();
   renderCustomersList();
   renderRunnersFull();
   renderCustomersFull();
-  renderEmailLogs();
-  updateEmailStats();
-  // Load default template
-  loadEmailTemplate();
 }
 
 function renderRunnersList() {
@@ -1018,10 +1200,9 @@ function renderRunnersList() {
   if (!el) return;
   if (!runners.length) { el.innerHTML = '<div class="empty-state">No runners yet.</div>'; return; }
   el.innerHTML = runners.slice(0, 3).map(r => `
-    <div class="runner-card" style="margin-bottom:8px;display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--gray-100);border-radius:var(--radius-sm);">
-      <div class="runner-avatar">${r.name.split(' ').map(n=>n[0]).join('')}</div>
-      <div style="flex:1;"><div style="font-weight:600;">${r.name}</div><div class="text-muted">${r.area||'Nairobi'}</div></div>
-      <span class="badge badge-${r.status==='online'?'green':'red'}">${cap(r.status)}</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--gray-100);">
+      <div><div style="font-weight:600;">${r.name}</div><div class="text-muted">${r.area || 'Nairobi'}</div></div>
+      <span class="badge badge-${r.status === 'online' ? 'green' : 'red'}">${cap(r.status)}</span>
       <button class="btn btn-danger btn-sm" onclick="deleteRunner('${r.id}')">Delete</button>
     </div>
   `).join('');
@@ -1034,7 +1215,7 @@ function renderCustomersList() {
   el.innerHTML = customers.slice(0, 3).map(c => `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--gray-100);">
       <div><div style="font-weight:600;">${c.name}</div><div class="text-muted">${c.phone}</div></div>
-      <span class="badge badge-${c.status==='active'?'green':'red'}">${cap(c.status)}</span>
+      <span class="badge badge-${c.status === 'active' ? 'green' : 'red'}">${cap(c.status)}</span>
       <button class="btn btn-danger btn-sm" onclick="deleteCustomer('${c.id}')">Delete</button>
     </div>
   `).join('');
@@ -1047,13 +1228,15 @@ function renderRunnersFull() {
   el.innerHTML = runners.map(r => `
     <div class="card" style="padding:16px;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-        <div class="runner-avatar">${r.name.split(' ').map(n=>n[0]).join('')}</div>
-        <div><div style="font-weight:700;">${r.name}</div><div class="text-muted">${r.area||'Nairobi'}</div></div>
+        <div class="user-avatar">${r.name.split(' ').map(n=>n[0]).join('')}</div>
+        <div><div style="font-weight:700;">${r.name}</div><div class="text-muted">${r.area || 'Nairobi'}</div></div>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
-        <span class="badge badge-${r.status==='online'?'green':'red'}">${cap(r.status)}</span>
-        <div><button class="btn btn-outline btn-sm" onclick="toggleRunnerStatus('${r.id}')">Toggle</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteRunner('${r.id}')">Delete</button></div>
+        <span class="badge badge-${r.status === 'online' ? 'green' : 'red'}">${cap(r.status)}</span>
+        <div>
+          <button class="btn btn-outline btn-sm" onclick="toggleRunnerStatus('${r.id}')">Toggle</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteRunner('${r.id}')">Delete</button>
+        </div>
       </div>
     </div>
   `).join('');
@@ -1068,29 +1251,27 @@ function renderCustomersFull() {
       <td><strong>${c.name}</strong></td>
       <td>${c.phone}</td>
       <td>${c.email}</td>
-      <td><span class="badge badge-${c.status==='active'?'green':'red'}">${cap(c.status)}</span></td>
+      <td><span class="badge badge-${c.status === 'active' ? 'green' : 'red'}">${cap(c.status)}</span></td>
       <td><button class="btn btn-danger btn-sm" onclick="deleteCustomer('${c.id}')">Delete</button></td>
     </tr>
   `).join('');
 }
 
-// ===== CRUD OPERATIONS =====
 function addRunner() {
   const name = prompt('Enter runner full name:');
   if (!name) return;
   const area = prompt('Enter area (e.g. Nairobi):') || 'Nairobi';
-  const email = prompt('Enter email:') || 'runner@example.com';
   const newRunner = {
     id: 'r' + Date.now(),
     name: name.trim(),
     phone: '07' + Math.floor(10000000 + Math.random() * 90000000),
     status: 'online',
     area: area.trim(),
-    email: email.trim()
+    email: 'runner@example.com'
   };
   runners.push(newRunner);
   renderAdmin();
-  showToast(`Runner ${newRunner.name} added!`, 'success');
+  showToast(`✅ Runner ${newRunner.name} added!`, 'success');
 }
 
 function deleteRunner(id) {
@@ -1123,7 +1304,7 @@ function addCustomer() {
   };
   customers.push(newCustomer);
   renderAdmin();
-  showToast(`Customer ${newCustomer.name} added!`, 'success');
+  showToast(`✅ Customer ${newCustomer.name} added!`, 'success');
 }
 
 function deleteCustomer(id) {
@@ -1133,15 +1314,36 @@ function deleteCustomer(id) {
   showToast('Customer deleted.', 'info');
 }
 
+// ===== EMAIL FUNCTIONS =====
+function sendCustomEmail() {
+  const to = document.getElementById('emailTo').value.trim();
+  const subject = document.getElementById('emailSubject').value.trim();
+  const message = document.getElementById('emailMessage').value.trim();
+  
+  if (!to || !subject || !message) {
+    showToast('Please fill in all fields.', 'warning');
+    return;
+  }
+  
+  emailLogs.unshift({
+    id: 'e' + Date.now(),
+    to: to,
+    subject: subject,
+    status: 'sent',
+    time: new Date().toISOString()
+  });
+  
+  showToast(`✅ Email sent to ${to}`, 'success');
+  document.getElementById('emailTo').value = '';
+  document.getElementById('emailSubject').value = '';
+  document.getElementById('emailMessage').value = '';
+}
+
 // ===== INIT =====
 setTheme(localStorage.getItem('nichukulieTheme') || 'light');
 
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('loginEmail').value = 'admin@nichu.com';
-  document.getElementById('loginPass').value = 'admin123';
-  // Load email template on load
-  loadEmailTemplate();
-});
+// Auto-login disabled for security - user must manually sign in
+// No pre-filled credentials in the login form
 </script>
 </body>
 </html>
